@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_50">#FFF3E5F5</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="translucent_black">#80000000</color>
+
+    <!-- Highlight colors (more visible versions) -->
+    <color name="highlight_yellow">#FFFFEB3B</color>
+    <color name="highlight_green">#FF76FF03</color>
+    <color name="highlight_blue">#FF2196F3</color>
+    <color name="highlight_pink">#FFFF4081</color>
+    <color name="highlight_purple">#FFE040FB</color>
+
+    <!-- Highlight colors for text (semi-transparent) -->
+    <color name="highlight_text_yellow">#80FFEB3B</color>
+    <color name="highlight_text_green">#8076FF03</color>
+    <color name="highlight_text_blue">#802196F3</color>
+    <color name="highlight_text_pink">#80FF4081</color>
+    <color name="highlight_text_purple">#80E040FB</color>
+</resources>
