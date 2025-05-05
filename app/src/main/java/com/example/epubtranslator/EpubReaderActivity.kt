@@ -1422,19 +1422,35 @@ class EpubReaderActivity : AppCompatActivity() {
                             tempDiv.innerHTML = originalContents[elementId];
                             var originalTextContent = tempDiv.textContent;
 
-                            // Count Hebrew and English characters to determine majority language
-                            var hebrewMatches = originalTextContent.match(/[\u0590-\u05FF\uFB1D-\uFB4F]/g) || [];
-                            var englishMatches = originalTextContent.match(/[a-zA-Z]/g) || [];
-                            var hebrewCount = hebrewMatches.length;
-                            var englishCount = englishMatches.length;
+                            // Improved language detection for RTL vs LTR
+                            // Check if the text contains RTL characters (Hebrew, Arabic)
+                            var rtlRegex = /[\u0590-\u05FF\uFB1D-\uFB4F\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
+                            // Check if the text contains Cyrillic characters (Russian)
+                            var cyrillicRegex = /[\u0400-\u04FF]/g;
+                            // Check for Latin characters
+                            var latinRegex = /[a-zA-Z]/g;
 
-                            console.log('Language detection - Hebrew chars: ' + hebrewCount + ', English chars: ' + englishCount);
+                            // Count characters by script
+                            var rtlChars = (originalTextContent.match(rtlRegex) || []).length;
+                            var cyrillicChars = (originalTextContent.match(cyrillicRegex) || []).length;
+                            var latinChars = (originalTextContent.match(latinRegex) || []).length;
 
-                            // Determine if Hebrew is the majority language
-                            var isHebrewText = hebrewCount > englishCount * 1.2 || (hebrewCount > 10 && hebrewCount > englishCount * 0.5);
-                            console.log('Original text majority Hebrew detection: ' + isHebrewText);
+                            console.log('Language detection - RTL chars: ' + rtlChars + ', Cyrillic chars: ' + cyrillicChars + ', Latin chars: ' + latinChars);
 
-                            if (isHebrewText) {
+                            // Determine text direction based on dominant script
+                            var isRTL = false;
+
+                            // If RTL characters are dominant (more than 40% of the text)
+                            if (rtlChars > 0 && rtlChars > (cyrillicChars + latinChars) * 0.4) {
+                                isRTL = true;
+                            }
+
+                            // Russian and other Cyrillic languages are always LTR
+                            if (cyrillicChars > 0) {
+                                isRTL = false;
+                            }
+
+                            if (isRTL) {
                                 // Hebrew detected, set RTL direction
                                 element.style.direction = 'rtl';
                                 element.style.textAlign = 'right';
@@ -1467,9 +1483,37 @@ class EpubReaderActivity : AppCompatActivity() {
                             element.innerHTML = '';
                             element.appendChild(textNode);
 
-                            // Check if the text is Hebrew and set RTL direction
-                            if (/[\u0590-\u05FF\uFB1D-\uFB4F]/.test(translatedText)) {
-                                // Hebrew detected, set RTL direction
+                            // Improved language detection for RTL vs LTR
+                            // Check if the text contains RTL characters (Hebrew, Arabic)
+                            var rtlRegex = /[\u0590-\u05FF\uFB1D-\uFB4F\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
+                            // Check if the text contains Cyrillic characters (Russian)
+                            var cyrillicRegex = /[\u0400-\u04FF]/g;
+                            // Check for Latin characters
+                            var latinRegex = /[a-zA-Z]/g;
+
+                            // Count characters by script
+                            var rtlChars = (translatedText.match(rtlRegex) || []).length;
+                            var cyrillicChars = (translatedText.match(cyrillicRegex) || []).length;
+                            var latinChars = (translatedText.match(latinRegex) || []).length;
+
+                            console.log('Language detection - RTL chars: ' + rtlChars + ', Cyrillic chars: ' + cyrillicChars + ', Latin chars: ' + latinChars);
+
+                            // Determine text direction based on dominant script
+                            var isRTL = false;
+
+                            // If RTL characters are dominant (more than 40% of the text)
+                            if (rtlChars > 0 && rtlChars > (cyrillicChars + latinChars) * 0.4) {
+                                isRTL = true;
+                            }
+
+                            // Russian and other Cyrillic languages are always LTR
+                            // If there are any Cyrillic characters, force LTR regardless of other languages
+                            if (cyrillicChars > 0) {
+                                isRTL = false;
+                            }
+
+                            if (isRTL) {
+                                // RTL language detected
                                 element.style.direction = 'rtl';
                                 element.style.textAlign = 'right';
                                 // For RTL, use right border instead of left
@@ -1759,9 +1803,37 @@ class EpubReaderActivity : AppCompatActivity() {
                         element.innerHTML = '';
                         element.appendChild(textNode);
 
-                        // Check if the text is Hebrew and set RTL direction
-                        if (/[\u0590-\u05FF\uFB1D-\uFB4F]/.test(translatedText)) {
-                            // Hebrew detected, set RTL direction
+                        // Improved language detection for RTL vs LTR
+                        // Check if the text contains RTL characters (Hebrew, Arabic)
+                        var rtlRegex = /[\u0590-\u05FF\uFB1D-\uFB4F\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
+                        // Check if the text contains Cyrillic characters (Russian)
+                        var cyrillicRegex = /[\u0400-\u04FF]/g;
+                        // Check for Latin characters
+                        var latinRegex = /[a-zA-Z]/g;
+
+                        // Count characters by script
+                        var rtlChars = (translatedText.match(rtlRegex) || []).length;
+                        var cyrillicChars = (translatedText.match(cyrillicRegex) || []).length;
+                        var latinChars = (translatedText.match(latinRegex) || []).length;
+
+                        console.log('Language detection - RTL chars: ' + rtlChars + ', Cyrillic chars: ' + cyrillicChars + ', Latin chars: ' + latinChars);
+
+                        // Determine text direction based on dominant script
+                        var isRTL = false;
+
+                        // If RTL characters are dominant (more than 40% of the text)
+                        if (rtlChars > 0 && rtlChars > (cyrillicChars + latinChars) * 0.4) {
+                            isRTL = true;
+                        }
+
+                        // Russian and other Cyrillic languages are always LTR
+                        // If there are any Cyrillic characters, force LTR regardless of other languages
+                        if (cyrillicChars > 0) {
+                            isRTL = false;
+                        }
+
+                        if (isRTL) {
+                            // RTL language detected
                             element.style.direction = 'rtl';
                             element.style.textAlign = 'right';
                             // For RTL, use right border instead of left

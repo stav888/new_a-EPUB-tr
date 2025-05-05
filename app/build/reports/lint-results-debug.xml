@@ -1167,7 +1167,7 @@
         errorLine2="        ^">
         <location
             file="C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt"
-            line="1969"
+            line="2041"
             column="9"/>
     </issue>
 
@@ -1183,7 +1183,7 @@
         errorLine2="                                           ^">
         <location
             file="C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt"
-            line="1969"
+            line="2041"
             column="44"/>
     </issue>
 

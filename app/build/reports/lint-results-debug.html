@@ -179,7 +179,7 @@ document.getElementById(id).style.display = 'none';
     <div class="mdl-layout__header-row">
       <span class="mdl-layout-title">Lint Report: 78 warnings</span>
       <div class="mdl-layout-spacer"></div>
-      <nav class="mdl-navigation mdl-layout--large-screen-only">Check performed at Mon May 05 18:15:32 IDT 2025 by AGP (8.9.2)</nav>
+      <nav class="mdl-navigation mdl-layout--large-screen-only">Check performed at Mon May 05 21:58:07 IDT 2025 by AGP (8.9.2)</nav>
     </div>
   </header>
   <div class="mdl-layout__drawer">
@@ -1464,24 +1464,24 @@ Dismiss</button>            </div>
               <div class="mdl-card__supporting-text">
 <div class="issue">
 <div class="warningslist">
-<span class="location"><a href="../../src/main/java/com/example/epubtranslator/EpubReaderActivity.kt">../../src/main/java/com/example/epubtranslator/EpubReaderActivity.kt</a>:1969</span>: <span class="message">Custom view `<code>WebView</code>` has <code>setOnTouchListener</code> called on it but does not override <code>performClick</code></span><br /><pre class="errorlines">
-<span class="lineno"> 1966 </span>        <span class="keyword">var</span> startX = <span class="number">0f</span>
-<span class="lineno"> 1967 </span>        <span class="keyword">var</span> startY = <span class="number">0f</span>
-<span class="lineno"> 1968 </span>
-<span class="caretline"><span class="lineno"> 1969 </span>        <span class="warning">binding.webView.setOnTouchListener { _, event -></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 1970 </span>            <span class="keyword">when</span> (event.action) {
-<span class="lineno"> 1971 </span>                MotionEvent.ACTION_DOWN -> {
-<span class="lineno"> 1972 </span>                    startX = event.x
+<span class="location"><a href="../../src/main/java/com/example/epubtranslator/EpubReaderActivity.kt">../../src/main/java/com/example/epubtranslator/EpubReaderActivity.kt</a>:2041</span>: <span class="message">Custom view `<code>WebView</code>` has <code>setOnTouchListener</code> called on it but does not override <code>performClick</code></span><br /><pre class="errorlines">
+<span class="lineno"> 2038 </span>        <span class="keyword">var</span> startX = <span class="number">0f</span>
+<span class="lineno"> 2039 </span>        <span class="keyword">var</span> startY = <span class="number">0f</span>
+<span class="lineno"> 2040 </span>
+<span class="caretline"><span class="lineno"> 2041 </span>        <span class="warning">binding.webView.setOnTouchListener { _, event -></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 2042 </span>            <span class="keyword">when</span> (event.action) {
+<span class="lineno"> 2043 </span>                MotionEvent.ACTION_DOWN -> {
+<span class="lineno"> 2044 </span>                    startX = event.x
 </pre>
 
-<span class="location"><a href="../../src/main/java/com/example/epubtranslator/EpubReaderActivity.kt">../../src/main/java/com/example/epubtranslator/EpubReaderActivity.kt</a>:1969</span>: <span class="message"><code>onTouch</code> lambda should call <code>View#performClick</code> when a click is detected</span><br /><pre class="errorlines">
-<span class="lineno"> 1966 </span>        <span class="keyword">var</span> startX = <span class="number">0f</span>
-<span class="lineno"> 1967 </span>        <span class="keyword">var</span> startY = <span class="number">0f</span>
-<span class="lineno"> 1968 </span>
-<span class="caretline"><span class="lineno"> 1969 </span>        binding.webView.setOnTouchListener <span class="warning">{ _, event -></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-<span class="lineno"> 1970 </span>            <span class="keyword">when</span> (event.action) {
-<span class="lineno"> 1971 </span>                MotionEvent.ACTION_DOWN -> {
-<span class="lineno"> 1972 </span>                    startX = event.x
+<span class="location"><a href="../../src/main/java/com/example/epubtranslator/EpubReaderActivity.kt">../../src/main/java/com/example/epubtranslator/EpubReaderActivity.kt</a>:2041</span>: <span class="message"><code>onTouch</code> lambda should call <code>View#performClick</code> when a click is detected</span><br /><pre class="errorlines">
+<span class="lineno"> 2038 </span>        <span class="keyword">var</span> startX = <span class="number">0f</span>
+<span class="lineno"> 2039 </span>        <span class="keyword">var</span> startY = <span class="number">0f</span>
+<span class="lineno"> 2040 </span>
+<span class="caretline"><span class="lineno"> 2041 </span>        binding.webView.setOnTouchListener <span class="warning">{ _, event -></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+<span class="lineno"> 2042 </span>            <span class="keyword">when</span> (event.action) {
+<span class="lineno"> 2043 </span>                MotionEvent.ACTION_DOWN -> {
+<span class="lineno"> 2044 </span>                    startX = event.x
 </pre>
 
 </div>

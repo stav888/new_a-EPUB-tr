@@ -418,10 +418,10 @@ C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\Ya
    </lint>
    ```
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:1969: Warning: Custom view `WebView` has setOnTouchListener called on it but does not override performClick [ClickableViewAccessibility]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:2041: Warning: Custom view `WebView` has setOnTouchListener called on it but does not override performClick [ClickableViewAccessibility]
         binding.webView.setOnTouchListener { _, event ->
         ^
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:1969: Warning: onTouch lambda should call View#performClick when a click is detected [ClickableViewAccessibility]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:2041: Warning: onTouch lambda should call View#performClick when a click is detected [ClickableViewAccessibility]
         binding.webView.setOnTouchListener { _, event ->
                                            ^
 
