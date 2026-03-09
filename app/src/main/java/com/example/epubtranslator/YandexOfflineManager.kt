@@ -3,8 +3,20 @@ package com.example.epubtranslator
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.example.epubtranslator.translation.Language
 import java.io.File
 import java.util.concurrent.Executors
+
+/**
+ * Data class for offline language management
+ */
+data class OfflineLanguage(
+    val code: String,
+    val name: String,
+    var isDownloaded: Boolean = false,
+    var isDownloading: Boolean = false,
+    var downloadProgress: Int = 0
+)
 
 class YandexOfflineManager(private val context: Context) {
     private val TAG = "YandexOfflineManager"
@@ -24,22 +36,22 @@ class YandexOfflineManager(private val context: Context) {
         }
 
     // Get all supported languages
-    fun getSupportedLanguages(): List<Language> {
+    fun getSupportedLanguages(): List<OfflineLanguage> {
         return listOf(
-            Language("en", "English"),
-            Language("ru", "Russian"),
-            Language("fr", "French"),
-            Language("de", "German"),
-            Language("es", "Spanish"),
-            Language("it", "Italian"),
-            Language("pt", "Portuguese"),
-            Language("zh", "Chinese"),
-            Language("ja", "Japanese"),
-            Language("ko", "Korean"),
-            Language("ar", "Arabic"),
-            Language("he", "Hebrew"),
-            Language("hi", "Hindi"),
-            Language("tr", "Turkish")
+            OfflineLanguage("en", "English"),
+            OfflineLanguage("ru", "Russian"),
+            OfflineLanguage("fr", "French"),
+            OfflineLanguage("de", "German"),
+            OfflineLanguage("es", "Spanish"),
+            OfflineLanguage("it", "Italian"),
+            OfflineLanguage("pt", "Portuguese"),
+            OfflineLanguage("zh", "Chinese"),
+            OfflineLanguage("ja", "Japanese"),
+            OfflineLanguage("ko", "Korean"),
+            OfflineLanguage("ar", "Arabic"),
+            OfflineLanguage("he", "Hebrew"),
+            OfflineLanguage("hi", "Hindi"),
+            OfflineLanguage("tr", "Turkish")
         ).map { language ->
             // Check if this language is already downloaded
             language.isDownloaded = isLanguageDownloaded(language.code)
@@ -55,7 +67,7 @@ class YandexOfflineManager(private val context: Context) {
 
     // Download a language
     fun downloadLanguage(
-        language: Language,
+        language: OfflineLanguage,
         progressCallback: (Int) -> Unit,
         completionCallback: (Boolean) -> Unit
     ) {
@@ -90,7 +102,7 @@ class YandexOfflineManager(private val context: Context) {
     }
 
     // Delete a downloaded language
-    fun deleteLanguage(language: Language, completionCallback: (Boolean) -> Unit) {
+    fun deleteLanguage(language: OfflineLanguage, completionCallback: (Boolean) -> Unit) {
         executor.execute {
             try {
                 val file = File(offlineDir, "${language.code}.dat")

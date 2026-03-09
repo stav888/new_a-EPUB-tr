@@ -9,9 +9,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class LanguageAdapter(
-    private val languages: List<Language>,
-    private val onDownloadClick: (Language) -> Unit,
-    private val onDeleteClick: (Language) -> Unit
+    private val languages: List<OfflineLanguage>,
+    private val onDownloadClick: (OfflineLanguage) -> Unit,
+    private val onDeleteClick: (OfflineLanguage) -> Unit
 ) : RecyclerView.Adapter<LanguageAdapter.LanguageViewHolder>() {
 
     class LanguageViewHolder(view: View) : RecyclerView.ViewHolder(view) {

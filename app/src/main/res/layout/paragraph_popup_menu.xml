@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/popup_background"
+    android:padding="8dp"
+    android:elevation="8dp">
+
+    <!-- Copy Text Option -->
+    <TextView
+        android:id="@+id/copyTextButton"
+        android:layout_width="200dp"
+        android:layout_height="48dp"
+        android:text="📋 Copy Text"
+        android:textSize="16sp"
+        android:textColor="@color/black"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:drawablePadding="12dp" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/purple_200"
+        android:layout_marginVertical="4dp" />
+
+    <!-- Google Translate Option -->
+    <TextView
+        android:id="@+id/googleTranslateButton"
+        android:layout_width="200dp"
+        android:layout_height="48dp"
+        android:text="🌐 Google Translate"
+        android:textSize="16sp"
+        android:textColor="@color/black"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:drawablePadding="12dp" />
+
+    <!-- Yandex Translate Option -->
+    <TextView
+        android:id="@+id/yandexTranslateButton"
+        android:layout_width="200dp"
+        android:layout_height="48dp"
+        android:text="🔤 Yandex App (Offline)"
+        android:textSize="16sp"
+        android:textColor="@color/black"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:drawablePadding="12dp" />
+
+</LinearLayout>

@@ -4,14 +4,13 @@
     name=":app"
     type="APP"
     maven="EPUBTranslator:app:unspecified"
-    agpVersion="8.9.2"
+    agpVersion="8.12.0"
     buildFolder="build"
-    bootClassPath="C:\Users\Stav\AppData\Local\Android\Sdk\platforms\android-33\android.jar;C:\Users\Stav\AppData\Local\Android\Sdk\build-tools\35.0.0\core-lambda-stubs.jar"
-    javaSourceLevel="1.8"
-    compileTarget="android-33"
+    bootClassPath="C:\Users\Stav\AppData\Local\Android\Sdk\platforms\android-34\android.jar;C:\Users\Stav\AppData\Local\Android\Sdk\build-tools\35.0.0\core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-34"
     neverShrinking="true">
   <lintOptions
-      abortOnError="true"
       absolutePaths="true"
       checkReleaseBuilds="true"
       explainIssues="true"/>

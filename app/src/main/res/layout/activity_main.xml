@@ -14,124 +14,281 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.google.android.material.appbar.AppBarLayout
+        <!-- Stitch-Inspired Header -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurface"
+            android:elevation="2dp">
 
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
+            <!-- Header with Title, View Toggle, and Add Button -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="?attr/colorPrimary"
-                android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-                app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:background="?attr/colorSurface">
 
-        </com.google.android.material.appbar.AppBarLayout>
+                <TextView
+                    android:id="@+id/headerTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="My Books"
+                    android:textSize="19.6sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:fontFamily="sans-serif-medium" />
+
+                <!-- Single View Toggle Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/viewToggleButton"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:background="@drawable/view_toggle_background"
+                    app:icon="@drawable/ic_view_grid"
+                    app:iconTint="@color/stitch_text_secondary"
+                    app:iconSize="18dp"
+                    app:iconPadding="0dp"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="Toggle View Mode" />
+
+                <ImageButton
+                    android:id="@+id/addBookButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/circular_button_background"
+                    android:src="@android:drawable/ic_input_add"
+                    app:tint="@android:color/white"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    android:contentDescription="Add Book" />
+
+            </LinearLayout>
+
+            <!-- Search Bar -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/stitch_border"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="16dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_search"
+                        app:tint="@color/stitch_text_secondary"
+                        android:contentDescription="Search" />
+
+                    <EditText
+                        android:id="@+id/searchEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:background="@android:color/transparent"
+                        android:hint="Search my books"
+                        android:textColorHint="@color/stitch_text_secondary"
+                        android:textColor="@color/stitch_text_primary"
+                        android:textSize="15.68sp"
+                        android:inputType="text"
+                        android:imeOptions="actionSearch"
+                        android:maxLines="1" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
 
         <!-- Content Area -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+            android:background="@color/stitch_background_light">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/titleContainer"
+            <!-- Filter Chips -->
+            <HorizontalScrollView
+                android:id="@+id/filterChipsScrollView"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginEnd="16dp"
+                android:layout_marginTop="8dp"
+                android:scrollbars="none"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
-                <TextView
-                    android:id="@+id/recentBooksTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="@string/recent_books"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@+id/apiSelectorLayout"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <LinearLayout
-                    android:id="@+id/apiSelectorLayout"
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/filterChipGroup"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginEnd="8dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@+id/toggleViewButton"
-                    app:layout_constraintTop_toTopOf="parent">
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
 
-                    <TextView
-                        android:id="@+id/apiSelectorLabel"
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRead"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/api"
-                        android:textSize="14sp"
-                        android:layout_marginEnd="4dp" />
+                        android:text="Read"
+                        android:checked="true"
+                        app:chipBackgroundColor="@color/stitch_primary"
+                        app:chipStrokeWidth="0dp"
+                        android:textColor="@android:color/white"
+                        app:cornerRadius="20dp" />
 
-                    <Spinner
-                        android:id="@+id/apiSelector"
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCurrentlyReading"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:minWidth="100dp" />
-                </LinearLayout>
+                        android:text="Currently Reading"
+                        app:chipBackgroundColor="@color/stitch_border"
+                        app:chipStrokeWidth="0dp"
+                        android:textColor="@color/stitch_text_secondary"
+                        app:cornerRadius="20dp" />
 
-                <ImageButton
-                    android:id="@+id/toggleViewButton"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/toggle_view"
-                    android:src="@drawable/ic_view_grid"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipToRead"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="To Read"
+                        app:chipBackgroundColor="@color/stitch_border"
+                        app:chipStrokeWidth="0dp"
+                        android:textColor="@color/stitch_text_secondary"
+                        app:cornerRadius="20dp" />
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                </com.google.android.material.chip.ChipGroup>
 
+            </HorizontalScrollView>
+
+            <!-- API Selector Only -->
+            <LinearLayout
+                android:id="@+id/controlsLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/filterChipsScrollView">
+
+                <TextView
+                    android:id="@+id/apiSelectorLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/api"
+                    android:textSize="13.72sp"
+                    android:textColor="@color/stitch_text_secondary"
+                    android:layout_marginEnd="8dp" />
+
+                <Spinner
+                    android:id="@+id/apiSelector"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="100dp" />
+
+            </LinearLayout>
+
+            <!-- Books RecyclerView -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recentBooksRecyclerView"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:layout_marginTop="8dp"
-                android:padding="4dp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
                 android:clipToPadding="false"
+                android:scrollbars="none"
+                android:fadeScrollbars="true"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/titleContainer"
+                app:layout_constraintTop_toBottomOf="@+id/controlsLayout"
                 tools:listitem="@layout/item_recent_book" />
 
-            <TextView
-                android:id="@+id/noRecentBooksTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/no_recent_books"
-                android:textSize="16sp"
+            <!-- Empty State Layout -->
+            <LinearLayout
+                android:id="@+id/emptyStateLayout"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:orientation="vertical"
+                android:gravity="center"
                 android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toBottomOf="@+id/controlsLayout">
+
+                <TextView
+                    android:id="@+id/noRecentBooksTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_recent_books"
+                    android:textSize="17.64sp"
+                    android:textColor="@color/stitch_text_secondary"
+                    android:gravity="center"
+                    android:layout_marginBottom="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/emptyStateAddButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Add Your First Book"
+                    android:backgroundTint="@color/stitch_primary"
+                    android:textColor="@android:color/white"
+                    app:cornerRadius="24dp"
+                    app:icon="@android:drawable/ic_input_add"
+                    app:iconTint="@android:color/white" />
+
+            </LinearLayout>
+
+
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Floating Action Button for Menu -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <!-- Floating Action Button for Menu (Hidden - using header button instead) -->
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/fabMenu"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
-            android:layout_margin="16dp"
+            android:layout_margin="24dp"
             android:contentDescription="@string/menu"
-            app:srcCompat="@android:drawable/ic_menu_sort_by_size" />
+            android:text="Menu"
+            android:visibility="gone"
+            app:icon="@android:drawable/ic_menu_more"
+            app:iconTint="?attr/colorOnPrimaryContainer"
+            app:backgroundTint="?attr/colorPrimaryContainer"
+            android:textColor="?attr/colorOnPrimaryContainer" />
+
+
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
@@ -142,6 +299,10 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
+        app:itemIconTint="?attr/colorOnSurfaceVariant"
+        app:itemTextColor="?attr/colorOnSurfaceVariant"
+        app:itemRippleColor="@android:color/transparent"
+        app:itemBackground="@android:color/transparent"
         app:headerLayout="@layout/nav_header"
         app:menu="@menu/drawer_menu" />
 

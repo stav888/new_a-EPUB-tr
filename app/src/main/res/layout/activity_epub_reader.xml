@@ -6,14 +6,291 @@
     android:layout_height="match_parent"
     tools:context=".EpubReaderActivity">
 
+    <!-- Stitch-inspired Header with Inline Search -->
+    <LinearLayout
+        android:id="@+id/toolbarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/stitch_background_light"
+        android:elevation="4dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Main Toolbar Row -->
+        <LinearLayout
+            android:id="@+id/mainToolbarRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="64dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="12dp">
+
+            <!-- Left side: TOC Button and Translation Method -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageButton
+                    android:id="@+id/tocButton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@drawable/ic_toc"
+                    android:contentDescription="Table of Contents"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+                <!-- Translation Method Dropdown -->
+                <LinearLayout
+                    android:id="@+id/translationMethodContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/stitch_round_button"
+                    android:paddingHorizontal="8dp"
+                    android:layout_marginStart="4dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:id="@+id/translationMethodText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="D"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/stitch_primary"
+                        android:layout_marginEnd="4dp" />
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/ic_keyboard_arrow_down"
+                        app:tint="@color/stitch_text_secondary" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Center: Flexible space (title moved below) -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Right side: Action buttons -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageButton
+                    android:id="@+id/searchButton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@drawable/ic_search"
+                    android:contentDescription="Search in Book"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    android:layout_marginEnd="4dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+                <ImageButton
+                    android:id="@+id/themeToggleButton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@drawable/ic_light_mode"
+                    android:contentDescription="Toggle dark/light mode"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    android:layout_marginEnd="4dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+                <ImageButton
+                    android:id="@+id/fontSizeDecreaseButton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@drawable/ic_font_size_decrease"
+                    android:contentDescription="Decrease font size"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    android:layout_marginEnd="2dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+                <TextView
+                    android:id="@+id/fontSizeTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="100%"
+                    android:textSize="12sp"
+                    android:textColor="@color/stitch_primary"
+                    android:textStyle="bold"
+                    android:minWidth="32dp"
+                    android:gravity="center"
+                    android:layout_marginHorizontal="2dp" />
+
+                <ImageButton
+                    android:id="@+id/fontSizeIncreaseButton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@drawable/ic_font_size_increase"
+                    android:contentDescription="Increase font size"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+                <ImageButton
+                    android:id="@+id/settingsButton"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@android:drawable/ic_menu_manage"
+                    android:contentDescription="Reader settings"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    android:layout_marginStart="6dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+
+            </LinearLayout>
+
+        </LinearLayout>
+        <!-- Book title row below toolbar buttons -->
+        <TextView
+            android:id="@+id/bookTitleText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@color/stitch_text_secondary"
+            android:gravity="center"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+
+        <!-- Inline Search Bar (Initially Hidden) -->
+        <LinearLayout
+            android:id="@+id/inlineSearchLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:background="@color/stitch_background_light"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="8dp">
+
+            <!-- Search Input Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/stitch_round_button"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp">
+
+                <EditText
+                    android:id="@+id/inlineSearchEditText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="Search in book..."
+                    android:textSize="14sp"
+                    android:textColor="@color/stitch_text_primary"
+                    android:textColorHint="@color/stitch_text_secondary"
+                    android:singleLine="true"
+                    android:imeOptions="actionSearch" />
+
+                <!-- Navigation Controls -->
+                <ImageButton
+                    android:id="@+id/searchPreviousButton"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_keyboard_arrow_up"
+                    android:contentDescription="Previous result"
+                    android:scaleType="centerInside"
+                    app:tint="@color/stitch_text_secondary"
+                    android:enabled="false" />
+
+                <ImageButton
+                    android:id="@+id/searchNextButton"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_keyboard_arrow_down"
+                    android:contentDescription="Next result"
+                    android:scaleType="centerInside"
+                    app:tint="@color/stitch_text_secondary"
+                    android:enabled="false" />
+
+                <!-- Results Counter -->
+                <TextView
+                    android:id="@+id/searchResultsCounter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="[0/0]"
+                    android:textSize="12sp"
+                    android:textColor="@color/stitch_text_secondary"
+                    android:layout_marginHorizontal="8dp"
+                    android:minWidth="40dp"
+                    android:gravity="center" />
+
+                <!-- Close Button -->
+                <ImageButton
+                    android:id="@+id/inlineSearchCloseButton"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    android:contentDescription="Close search"
+                    android:scaleType="centerInside"
+                    app:tint="@color/stitch_text_secondary" />
+
+            </LinearLayout>
+
+            <!-- Search Results Preview (Max 4 rows) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/searchResultsPreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:maxHeight="160dp"
+                android:visibility="gone"
+                android:background="@drawable/stitch_round_button"
+                android:padding="8dp"
+                android:nestedScrollingEnabled="true" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+
+
     <WebView
         android:id="@+id/webView"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:background="@color/stitch_background_light"
         app:layout_constraintBottom_toTopOf="@+id/navigationLayout"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/toolbarLayout" />
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -26,30 +303,180 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Stitch-inspired Bottom Navigation -->
     <LinearLayout
         android:id="@+id/navigationLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@color/stitch_background_light"
         android:elevation="4dp"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <TextView
-            android:id="@+id/pageNumberTextView"
-            android:layout_width="wrap_content"
+        <!-- Page Navigation Slider -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="0 / 0"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/purple_700"
-            android:padding="8dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Page:"
+                android:textSize="12sp"
+                android:textColor="@color/stitch_text_secondary"
+                android:textStyle="normal"
+                android:layout_marginEnd="8dp" />
+
+            <SeekBar
+                android:id="@+id/pageNavigationSlider"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="0"
+                android:progressTint="@color/stitch_primary"
+                android:thumbTint="@color/stitch_primary"
+                android:progressBackgroundTint="@color/stitch_border"
+                android:layout_marginHorizontal="8dp" />
+
+            <TextView
+                android:id="@+id/pageNumberTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 / 0"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/stitch_primary"
+                android:minWidth="60dp"
+                android:gravity="center"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <!-- Navigation Buttons with Reading Progress -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Spacer to push navigation buttons to center -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- Quick Navigation Buttons (Centered) -->
+            <LinearLayout
+                android:id="@+id/navigationButtonsRow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <ImageButton
+                    android:id="@+id/firstPageButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@drawable/ic_first_page"
+                    android:contentDescription="Go to first page"
+                    android:layout_marginEnd="8dp"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+                <ImageButton
+                    android:id="@+id/previousPageButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@drawable/ic_chevron_left"
+                    android:contentDescription="Previous page"
+                    android:layout_marginEnd="16dp"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+                <ImageButton
+                    android:id="@+id/nextPageButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@drawable/ic_chevron_right"
+                    android:contentDescription="Next page"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="8dp"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+                <ImageButton
+                    android:id="@+id/lastPageButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/stitch_round_button"
+                    android:src="@drawable/ic_last_page"
+                    android:contentDescription="Go to last page"
+                    android:scaleType="centerInside"
+                    android:padding="8dp"
+                    app:tint="@color/stitch_text_secondary" />
+
+            </LinearLayout>
+
+            <!-- Reading Progress Percentage (Right Side) -->
+            <TextView
+                android:id="@+id/readingProgressTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="0%"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/stitch_text_secondary"
+                android:gravity="end"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Toggle Button for Hide Bars (in bottom navigation) -->
+            <ImageButton
+                android:id="@+id/hideBarButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/stitch_round_button"
+                android:src="@drawable/ic_keyboard_arrow_down"
+                android:contentDescription="@string/hide_bars"
+                android:scaleType="centerInside"
+                android:padding="6dp"
+                android:layout_marginEnd="4dp"
+                app:tint="@color/stitch_text_secondary" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
+    <!-- Floating action button for show bars (initially hidden, appears when bars are hidden) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/showBarButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/show_bars"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:srcCompat="@drawable/ic_keyboard_arrow_up"
+        app:tint="@android:color/white"
+        android:visibility="gone"
+        app:fabSize="normal"
+        app:backgroundTint="@color/stitch_primary" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
+

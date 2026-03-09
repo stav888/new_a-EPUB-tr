@@ -6,210 +6,181 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Rect
 import android.graphics.Typeface
 import android.util.Log
-import java.io.File
-import java.io.FileOutputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jsoup.Jsoup
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 
-/**
- * Utility class for generating thumbnails for EPUB files
- */
 class ThumbnailGenerator(private val context: Context) {
-    
     companion object {
         private const val TAG = "ThumbnailGenerator"
         private const val THUMBNAIL_WIDTH = 200
         private const val THUMBNAIL_HEIGHT = 300
         private const val THUMBNAILS_DIR = "thumbnails"
+        // If an existing thumbnail is smaller than this, treat it as legacy/simple and regenerate
+        private const val MIN_VALID_THUMB_SIZE_BYTES = 8 * 1024 // 8KB heuristic
     }
-    
-    /**
-     * Generate a thumbnail for an EPUB file
-     * 
-     * @param epubFilePath Path to the EPUB file
-     * @return Path to the generated thumbnail, or null if generation failed
-     */
+
     suspend fun generateThumbnail(epubFilePath: String): String? = withContext(Dispatchers.IO) {
         try {
+            Log.d(TAG, "Generating thumbnail for: $epubFilePath")
             val file = File(epubFilePath)
             if (!file.exists()) {
-                Log.e(TAG, "EPUB file does not exist: $epubFilePath")
+                Log.e(TAG, "EPUB file not found: $epubFilePath")
                 return@withContext null
             }
-            
-            // Create thumbnails directory if it doesn't exist
-            val thumbnailsDir = File(context.filesDir, THUMBNAILS_DIR)
-            if (!thumbnailsDir.exists()) {
-                thumbnailsDir.mkdirs()
-            }
-            
-            // Generate a unique filename for the thumbnail
-            val thumbnailFileName = "${file.nameWithoutExtension}_${file.lastModified()}.png"
+            val thumbnailsDir = File(context.filesDir, THUMBNAILS_DIR).apply { mkdirs() }
+            val thumbnailFileName = "${file.nameWithoutExtension}_thumb.jpg"
             val thumbnailFile = File(thumbnailsDir, thumbnailFileName)
-            
-            // Check if thumbnail already exists
-            if (thumbnailFile.exists()) {
+
+            val needRegeneration = if (thumbnailFile.exists() && thumbnailFile.length() > 0) {
+                val size = thumbnailFile.length()
+                val regenerate = size < MIN_VALID_THUMB_SIZE_BYTES
+                Log.d(TAG, "Existing thumbnail found size=${size}B regenerate=$regenerate path=${thumbnailFile.absolutePath}")
+                regenerate
+            } else false
+
+            if (thumbnailFile.exists() && !needRegeneration) {
+                Log.d(TAG, "Reusing existing thumbnail: ${thumbnailFile.absolutePath}")
                 return@withContext thumbnailFile.absolutePath
             }
-            
-            // Try to extract cover image from EPUB
-            val coverBitmap = extractCoverFromEpub(epubFilePath)
-                ?: generateDefaultCover(file.nameWithoutExtension)
-            
-            // Save the bitmap to a file
+
+            // Try to extract real cover first; if fails fall back to simple cover
+            val coverBitmap = extractCoverBitmap(file) ?: createSimpleCover(file.nameWithoutExtension)
+
             FileOutputStream(thumbnailFile).use { out ->
-                coverBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                // Use JPEG for better compression and smaller file sizes
+                coverBitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
             }
-            
+            Log.d(TAG, "Thumbnail saved to: ${thumbnailFile.absolutePath}")
             return@withContext thumbnailFile.absolutePath
         } catch (e: Exception) {
-            Log.e(TAG, "Error generating thumbnail", e)
+            Log.e(TAG, "Failed to generate thumbnail", e)
             return@withContext null
         }
     }
-    
-    /**
-     * Extract the cover image from an EPUB file
-     */
-    private fun extractCoverFromEpub(epubFilePath: String): Bitmap? {
-        try {
-            val zipFile = ZipFile(epubFilePath)
-            val entries = zipFile.entries()
-            
-            // Look for common cover image filenames
-            val coverPatterns = listOf(
-                "cover.jpg", "cover.jpeg", "cover.png",
-                "Cover.jpg", "Cover.jpeg", "Cover.png",
-                "cover_image", "coverimage"
-            )
-            
-            while (entries.hasMoreElements()) {
-                val entry = entries.nextElement()
-                val entryName = entry.name.lowercase()
-                
-                // Check if this entry might be a cover image
-                if (!entry.isDirectory && 
-                    (entryName.endsWith(".jpg") || entryName.endsWith(".jpeg") || entryName.endsWith(".png")) &&
-                    (coverPatterns.any { entryName.contains(it.lowercase()) } || entryName.contains("cover"))
-                ) {
-                    // Try to decode the image
-                    val inputStream = zipFile.getInputStream(entry)
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
-                    inputStream.close()
-                    
-                    if (bitmap != null) {
-                        // Resize the bitmap to the desired thumbnail size
-                        return resizeBitmap(bitmap, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
-                    }
-                }
+
+    private fun extractCoverBitmap(epubFile: File): Bitmap? {
+        var zipFile: ZipFile? = null
+        return try {
+            zipFile = ZipFile(epubFile)
+            val containerEntry = zipFile.getEntry("META-INF/container.xml") ?: run {
+                Log.w(TAG, "container.xml not found")
+                return null
             }
-            
-            zipFile.close()
+            val containerDoc = zipFile.getInputStream(containerEntry).use { Jsoup.parse(it, "UTF-8", "") }
+            val rootfilePath = containerDoc.selectFirst("rootfile")?.attr("full-path")
+            if (rootfilePath.isNullOrBlank()) {
+                Log.w(TAG, "rootfile path missing in container.xml")
+                return null
+            }
+            val opfDir = File(rootfilePath).parent?.let { if (it == ".") "" else it } ?: ""
+            val opfEntry = zipFile.getEntry(rootfilePath) ?: run {
+                Log.w(TAG, "OPF file $rootfilePath not found in epub")
+                return null
+            }
+            val opfDoc = zipFile.getInputStream(opfEntry).use { Jsoup.parse(it, "UTF-8", "") }
+
+            // Strategy 1: meta name="cover" content="id"
+            var coverId: String? = opfDoc.select("meta[name=cover]").firstOrNull()?.attr("content")
+            // Strategy 2: meta property="cover-image"
+            if (coverId.isNullOrBlank()) {
+                coverId = opfDoc.select("meta[property=cover-image]").firstOrNull()?.attr("content")
+            }
+
+            var coverHref: String? = null
+            if (!coverId.isNullOrBlank()) {
+                coverHref = opfDoc.select("manifest item[id=$coverId]").firstOrNull()?.attr("href")
+            }
+            // Strategy 3: any manifest item id or href containing 'cover' and image media-type
+            if (coverHref.isNullOrBlank()) {
+                val candidate = opfDoc.select("manifest item").firstOrNull { el ->
+                    val media = el.attr("media-type")
+                    val idAttr = el.attr("id").lowercase()
+                    val hrefAttr = el.attr("href").lowercase()
+                    media.startsWith("image/") && ("cover" in idAttr || "cover" in hrefAttr)
+                }
+                coverHref = candidate?.attr("href")
+            }
+            if (coverHref.isNullOrBlank()) {
+                Log.w(TAG, "No cover href found in OPF; falling back")
+                return null
+            }
+            val normalizedPath = if (opfDir.isNotEmpty()) "$opfDir/$coverHref" else coverHref
+            val coverEntry: ZipEntry = zipFile.getEntry(normalizedPath) ?: run {
+                Log.w(TAG, "Cover image entry $normalizedPath not found in zip")
+                return null
+            }
+            val bytes = zipFile.getInputStream(coverEntry).use(InputStream::readBytes)
+            val rawBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: run {
+                Log.w(TAG, "BitmapFactory failed to decode cover bytes")
+                return null
+            }
+            Log.d(TAG, "Extracted raw cover bitmap ${rawBitmap.width}x${rawBitmap.height}")
+            return scaleAndLetterbox(rawBitmap)
         } catch (e: Exception) {
-            Log.e(TAG, "Error extracting cover from EPUB", e)
+            Log.w(TAG, "Cover extraction failed: ${e.message}")
+            null
+        } finally {
+            try { zipFile?.close() } catch (_: Exception) {}
         }
-        
-        return null
     }
-    
-    /**
-     * Generate a default cover image with the book title
-     */
-    private fun generateDefaultCover(title: String): Bitmap {
+
+    private fun scaleAndLetterbox(source: Bitmap): Bitmap {
+        val targetW = THUMBNAIL_WIDTH
+        val targetH = THUMBNAIL_HEIGHT
+        val srcW = source.width
+        val srcH = source.height
+        val scale = minOf(targetW / srcW.toFloat(), targetH / srcH.toFloat())
+        val scaledW = (srcW * scale).toInt().coerceAtLeast(1)
+        val scaledH = (srcH * scale).toInt().coerceAtLeast(1)
+        val scaled = Bitmap.createScaledBitmap(source, scaledW, scaledH, true)
+        val output = Bitmap.createBitmap(targetW, targetH, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(output)
+        canvas.drawColor(Color.DKGRAY)
+        val left = (targetW - scaledW) / 2f
+        val top = (targetH - scaledH) / 2f
+        canvas.drawBitmap(scaled, left, top, null)
+        if (scaled != source) scaled.recycle()
+        return output
+    }
+
+    private fun createSimpleCover(title: String): Bitmap {
         val bitmap = Bitmap.createBitmap(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        
-        // Fill the background with a gradient
-        val paint = Paint()
-        paint.color = Color.rgb(63, 81, 181) // Primary color
-        canvas.drawRect(0f, 0f, THUMBNAIL_WIDTH.toFloat(), THUMBNAIL_HEIGHT.toFloat(), paint)
-        
-        // Draw the title text
-        paint.color = Color.WHITE
-        paint.textSize = 24f
-        paint.typeface = Typeface.DEFAULT_BOLD
-        paint.textAlign = Paint.Align.CENTER
-        
-        // Wrap the text if it's too long
-        val lines = wrapText(title, paint, THUMBNAIL_WIDTH - 20)
-        
-        // Draw each line of text
-        val lineHeight = paint.fontSpacing
-        val startY = (THUMBNAIL_HEIGHT - (lines.size * lineHeight)) / 2 + lineHeight
-        
-        for ((i, line) in lines.withIndex()) {
-            canvas.drawText(line, THUMBNAIL_WIDTH / 2f, startY + i * lineHeight, paint)
+        canvas.drawColor(Color.rgb(63, 81, 181))
+        val paint = Paint().apply {
+            color = Color.WHITE
+            textSize = 18f
+            typeface = Typeface.DEFAULT_BOLD
+            textAlign = Paint.Align.CENTER
+            isAntiAlias = true
         }
-        
-        return bitmap
-    }
-    
-    /**
-     * Resize a bitmap to the specified dimensions
-     */
-    private fun resizeBitmap(bitmap: Bitmap, width: Int, height: Int): Bitmap {
-        val scaledBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(scaledBitmap)
-        
-        // Calculate scaling to maintain aspect ratio
-        val sourceWidth = bitmap.width
-        val sourceHeight = bitmap.height
-        
-        val sourceRect = Rect(0, 0, sourceWidth, sourceHeight)
-        val destRect: Rect
-        
-        if (sourceWidth / sourceHeight > width / height) {
-            // Source is wider than destination
-            val scaledHeight = sourceHeight * width / sourceWidth
-            val yOffset = (height - scaledHeight) / 2
-            destRect = Rect(0, yOffset, width, yOffset + scaledHeight)
-        } else {
-            // Source is taller than destination
-            val scaledWidth = sourceWidth * height / sourceHeight
-            val xOffset = (width - scaledWidth) / 2
-            destRect = Rect(xOffset, 0, xOffset + scaledWidth, height)
-        }
-        
-        canvas.drawBitmap(bitmap, sourceRect, destRect, null)
-        return scaledBitmap
-    }
-    
-    /**
-     * Wrap text to fit within the specified width
-     */
-    private fun wrapText(text: String, paint: Paint, maxWidth: Int): List<String> {
+        val words = title.split(" ")
         val lines = mutableListOf<String>()
-        val words = text.split(" ")
-        
         var currentLine = ""
         for (word in words) {
             val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
-            val testWidth = paint.measureText(testLine)
-            
-            if (testWidth <= maxWidth) {
+            if (paint.measureText(testLine) <= THUMBNAIL_WIDTH - 40) {
                 currentLine = testLine
             } else {
-                lines.add(currentLine)
+                if (currentLine.isNotEmpty()) lines.add(currentLine)
                 currentLine = word
+                if (lines.size >= 3) break
             }
         }
-        
-        if (currentLine.isNotEmpty()) {
-            lines.add(currentLine)
+        if (currentLine.isNotEmpty() && lines.size < 3) lines.add(currentLine)
+        val lineHeight = paint.fontSpacing
+        val startY = (THUMBNAIL_HEIGHT - (lines.size * lineHeight)) / 2 + lineHeight
+        lines.forEachIndexed { index, line ->
+            canvas.drawText(line, THUMBNAIL_WIDTH / 2f, startY + index * lineHeight, paint)
         }
-        
-        // Limit to 3 lines
-        if (lines.size > 3) {
-            val truncatedLines = lines.take(2).toMutableList()
-            truncatedLines.add("${lines[2]}...")
-            return truncatedLines
-        }
-        
-        return lines
+        return bitmap
     }
 }

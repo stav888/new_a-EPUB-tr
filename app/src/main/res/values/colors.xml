@@ -1,13 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Stitch-Inspired Color Palette -->
+    <!-- Primary Colors (Based on Stitch #1173d4) -->
+    <color name="md_theme_light_primary">#1173D4</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#D6E7FF</color>
+    <color name="md_theme_light_onPrimaryContainer">#001C3B</color>
+
+    <!-- Secondary Colors (Complementary to Stitch blue) -->
+    <color name="md_theme_light_secondary">#5A6B7D</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#DDE3EA</color>
+    <color name="md_theme_light_onSecondaryContainer">#171C22</color>
+
+    <!-- Surface Colors (Based on Stitch #f6f7f8) -->
+    <color name="md_theme_light_surface">#F6F7F8</color>
+    <color name="md_theme_light_onSurface">#1C2A38</color>
+    <color name="md_theme_light_surfaceVariant">#E1E6EA</color>
+    <color name="md_theme_light_onSurfaceVariant">#44474E</color>
+
+    <!-- Background Colors (Stitch light background) -->
+    <color name="md_theme_light_background">#F6F7F8</color>
+    <color name="md_theme_light_onBackground">#1C2A38</color>
+
+    <!-- Error Colors -->
+    <color name="md_theme_light_error">#BA1A1A</color>
+    <color name="md_theme_light_onError">#FFFFFF</color>
+    <color name="md_theme_light_errorContainer">#FFDAD6</color>
+    <color name="md_theme_light_onErrorContainer">#410002</color>
+
+    <!-- Outline Colors -->
+    <color name="md_theme_light_outline">#79747E</color>
+    <color name="md_theme_light_outlineVariant">#CAC4D0</color>
+
+    <!-- Stitch Design System Colors -->
+    <color name="stitch_primary">#1173D4</color>
+    <color name="stitch_background_light">#F6F7F8</color>
+    <color name="stitch_background_dark">#101922</color>
+    <color name="stitch_text_primary">#1C2A38</color>
+    <color name="stitch_text_secondary">#6B7280</color>
+    <color name="stitch_surface_elevated">#FFFFFF</color>
+    <color name="stitch_border">#E5E7EB</color>
+
+    <!-- Legacy colors for backward compatibility -->
     <color name="purple_50">#FFF3E5F5</color>
     <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_300">#FF9C27B0</color>
+    <color name="purple_500">#1173D4</color>
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="light_gray">#FFF5F5F5</color>
     <color name="translucent_black">#80000000</color>
 
     <!-- Highlight colors (more visible versions) -->
@@ -23,4 +68,22 @@
     <color name="highlight_text_blue">#802196F3</color>
     <color name="highlight_text_pink">#80FF4081</color>
     <color name="highlight_text_purple">#80E040FB</color>
+
+    <!-- Dark Theme Colors -->
+    <color name="md_theme_dark_primary">#4285f4</color>
+    <color name="md_theme_dark_onPrimary">#ffffff</color>
+    <color name="md_theme_dark_primaryContainer">#1a73e8</color>
+    <color name="md_theme_dark_onPrimaryContainer">#ffffff</color>
+    <color name="md_theme_dark_secondary">#03dac6</color>
+    <color name="md_theme_dark_onSecondary">#000000</color>
+    <color name="md_theme_dark_secondaryContainer">#018786</color>
+    <color name="md_theme_dark_onSecondaryContainer">#ffffff</color>
+    <color name="md_theme_dark_surface">#121212</color>
+    <color name="md_theme_dark_onSurface">#e0e0e0</color>
+    <color name="md_theme_dark_surfaceVariant">#1e1e1e</color>
+    <color name="md_theme_dark_onSurfaceVariant">#c4c4c4</color>
+    <color name="md_theme_dark_background">#0d0d0d</color>
+    <color name="md_theme_dark_onBackground">#e0e0e0</color>
+    <color name="md_theme_dark_outline">#424242</color>
+    <color name="md_theme_dark_outlineVariant">#2e2e2e</color>
 </resources>

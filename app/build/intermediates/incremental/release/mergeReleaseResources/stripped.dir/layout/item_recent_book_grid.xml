@@ -1,43 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="4dp">
+    android:layout_margin="6dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@color/stitch_surface_elevated"
+    app:strokeWidth="0dp"
+    app:rippleColor="@color/stitch_primary">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="8dp">
+        android:padding="0dp">
 
-        <!-- Book Thumbnail -->
-        <FrameLayout
+        <!-- Book Thumbnail with Stitch 3:4 aspect ratio -->
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="180dp">
+            android:layout_height="wrap_content">
 
             <ImageView
                 android:id="@+id/bookThumbnailImageView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:scaleType="fitCenter"
-                android:background="@android:color/transparent"
-                android:padding="4dp"
+                android:background="@drawable/thumbnail_bg_placeholder"
                 android:contentDescription="@string/book_thumbnail"
-                tools:src="@drawable/ic_launcher_background" />
+                android:adjustViewBounds="true"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="3dp"
+                android:layout_marginBottom="3dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintDimensionRatio="3:4"
+                tools:src="@drawable/ic_book_placeholder" />
 
-            <!-- Removed overlay for transparent background -->
-        </FrameLayout>
+            <!-- Rounded corners overlay for image -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@drawable/rounded_corners_overlay"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="3dp"
+                android:layout_marginBottom="3dp"
+                android:clickable="false"
+                android:focusable="false"
+                app:layout_constraintTop_toTopOf="@id/bookThumbnailImageView"
+                app:layout_constraintStart_toStartOf="@id/bookThumbnailImageView"
+                app:layout_constraintEnd_toEndOf="@id/bookThumbnailImageView"
+                app:layout_constraintBottom_toBottomOf="@id/bookThumbnailImageView" />
 
-        <!-- Book Info -->
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Book Info with Stitch styling -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="8dp">
+            android:padding="12dp">
 
             <TextView
                 android:id="@+id/bookTitleTextView"
@@ -45,18 +75,31 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="2"
-                android:textSize="14sp"
+                android:textSize="13.72sp"
                 android:textStyle="bold"
+                android:textColor="@color/stitch_text_primary"
+                android:fontFamily="sans-serif-medium"
+                android:lineSpacingExtra="2dp"
                 tools:text="Book Title That Might Be Very Long" />
+
+            <TextView
+                android:id="@+id/bookFileNameTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="middle"
+                android:maxLines="1"
+                android:textSize="10.5sp"
+                android:textColor="@color/stitch_text_secondary"
+                tools:text="book_filename.epub" />
 
             <TextView
                 android:id="@+id/lastOpenedTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:textSize="12sp"
-                android:textStyle="italic"
-                android:textColor="@color/purple_500"
+                android:textSize="11.76sp"
+                android:textColor="@color/stitch_text_secondary"
                 android:maxLines="1"
                 android:ellipsize="end"
                 tools:text="Last opened 2 hours ago" />
@@ -65,4 +108,4 @@
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

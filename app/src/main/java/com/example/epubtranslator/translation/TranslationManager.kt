@@ -17,8 +17,9 @@ class TranslationManager(private val context: Context) {
     private val translationService = TranslationService()
     private val languageManager = LanguageManager(context)
 
-    // Shared preferences key for the translation API
+    // Shared preferences keys
     private val PREF_TRANSLATION_API = "translation_api"
+    private val PREF_TRANSLATION_METHOD = "translation_method"
 
     /**
      * Set the translation API to use
@@ -48,6 +49,24 @@ class TranslationManager(private val context: Context) {
         translationService.setTranslationApi(api)
 
         return api
+    }
+
+    /**
+     * Set the translation method to use
+     */
+    fun setTranslationMethod(method: TranslationMethod) {
+        val prefs = context.getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
+        prefs.edit().putString(PREF_TRANSLATION_METHOD, method.name).apply()
+        Log.d(TAG, "Translation method set to: $method")
+    }
+
+    /**
+     * Get the current translation method
+     */
+    fun getCurrentMethod(): TranslationMethod {
+        val prefs = context.getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
+        val methodName = prefs.getString(PREF_TRANSLATION_METHOD, TranslationMethod.getDefault().name)
+        return TranslationMethod.fromString(methodName ?: TranslationMethod.getDefault().name)
     }
 
     /**
@@ -88,6 +107,14 @@ class TranslationManager(private val context: Context) {
      */
     fun getTargetLanguage(): Language {
         return languageManager.getTargetLanguage()
+    }
+
+
+    /**
+     * Expose language detection for UI logic (e.g., block same-language translation)
+     */
+    fun detectLanguage(text: String): String {
+        return translationService.detectLanguagePublic(text)
     }
 
     /**

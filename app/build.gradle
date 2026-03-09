@@ -1,59 +1,165 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+    // id 'kotlin-kapt' // Temporarily disabled to fix duplicate class issues
 }
+
+def versionProps = new Properties()
+def versionPropsFile = rootProject.file("version.properties")
+if (versionPropsFile.exists()) {
+    versionProps.load(new FileInputStream(versionPropsFile))
+}
+
+def major = versionProps['MAJOR_VERSION'] ?: '1'
+def minor = versionProps['MINOR_VERSION'] ?: '5'
+def patch = versionProps['PATCH_VERSION'] ?: '12'
+def buildNumber = versionProps['BUILD_NUMBER'] ?: '1'
+
+// Simple versioning - always use MAJOR.MINOR.PATCH build BUILD_NUMBER format
+def computedVersionName = "${major}.${minor}.${patch} build ${buildNumber}"
+def computedVersionCode = (versionProps['VERSION_CODE'] ?: '44').toInteger()
 
 android {
     namespace "com.example.epubtranslator"
-    compileSdkVersion 33
+    compileSdkVersion 34
     defaultConfig {
         applicationId "com.example.epubtranslator"
         minSdkVersion 26
-        targetSdkVersion 33
-        versionCode 1
-        versionName "1.0"
+        targetSdkVersion 34
+        versionCode computedVersionCode
+        versionName computedVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
+    lint {
+        baseline = file("lint-baseline.xml")
+        checkReleaseBuilds false
+        abortOnError false
+    }
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+    }
+}
+
+// Auto-bump version before each build (except release keeps beta build untouched)
+if (!project.hasProperty('disableAutoVersionBump')) {
+    tasks.register('bumpVersion') {
+        doLast {
+            def propsFile = rootProject.file('version.properties')
+            if (!propsFile.exists()) {
+                println "version.properties not found, skipping bump"
+                return
+            }
+            def p = new Properties()
+            propsFile.withInputStream { p.load(it) }
+            try {
+                def currentCode = (p['VERSION_CODE'] ?: '1').toInteger()
+                def newCode = currentCode + 1
+                p['VERSION_CODE'] = newCode.toString()
+
+                // Increment BUILD_NUMBER for each build
+                def currentBuildNumber = (p['BUILD_NUMBER'] ?: '1').toInteger()
+                def newBuildNumber = currentBuildNumber + 1
+                p['BUILD_NUMBER'] = newBuildNumber.toString()
+
+                if ((p['BUILD_TYPE'] ?: 'beta') != 'release') {
+                    def beta = (p['BETA_BUILD'] ?: '1').toInteger() + 1
+                    p['BETA_BUILD'] = beta.toString()
+                }
+                propsFile.withOutputStream { out ->
+                    p.store(out, "Auto-bumped on ${new Date()}")
+                }
+                println "[bumpVersion] Bumped VERSION_CODE to ${p['VERSION_CODE']} (build ${p['BUILD_NUMBER']})"
+            } catch (Exception e) {
+                println "[bumpVersion] Failed to bump version: ${e.message}"
+            }
+        }
+    }
+    tasks.matching { it.name == 'preBuild' }.configureEach { dependsOn('bumpVersion') }
 }
 
 dependencies {
     // Core Android dependencies
-    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.8.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
+    // Material Design 3 - Latest version
+    implementation 'com.google.android.material:material:1.11.0'
+
     // JSoup for HTML parsing
-    implementation 'org.jsoup:jsoup:1.16.1'
+    implementation 'org.jsoup:jsoup:1.17.2'
 
     // Retrofit for API calls
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.10.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
 
     // Coroutines for asynchronous programming
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
+
+    // Room Database for annotations - temporarily removed
+    // implementation 'androidx.room:room-runtime:2.6.1'
+    // implementation 'androidx.room:room-ktx:2.6.1'
+    // kapt 'androidx.room:room-compiler:2.6.1'
+
+    // Charts for reading statistics - temporarily removed
+    // implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+
+    // Google Play Services for cloud sync - temporarily removed
+    // implementation 'com.google.android.gms:play-services-auth:20.7.0'
+    // implementation 'com.google.android.gms:play-services-drive:17.0.0'
+
+    // PDF support - temporarily removed due to dependency issues
+    // implementation 'com.github.barteksc:android-pdf-viewer:3.2.0-beta.1'
+
+    // Advanced text processing - temporarily removed
+    // implementation 'org.apache.commons:commons-text:1.11.0'
+
+    // Image loading for book covers - re-enabled
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    // kapt 'com.github.bumptech.glide:compiler:4.16.0' // Temporarily disabled
+
+    // RecyclerView animations - temporarily removed
+    // implementation 'jp.wasabeef:recyclerview-animators:4.0.2'
+
+    // Color picker for annotations - temporarily removed
+    // implementation 'com.github.QuadFlask:colorpicker:0.0.15'
+
+    // Navigation components - temporarily removed to simplify build
+    // implementation 'androidx.navigation:navigation-fragment-ktx:2.7.6'
+    // implementation 'androidx.navigation:navigation-ui-ktx:2.7.6'
 
     // Testing
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
+

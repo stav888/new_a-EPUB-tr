@@ -52,4 +52,18 @@
     <string name="api_selection">Translation API</string>
     <string name="api_changed">Translation API changed to %1$s</string>
     <string name="translation_removed">Translation removed</string>
+
+    <!-- Translation Method Strings -->
+    <string name="translation_method_default">Default API</string>
+    <string name="translation_method_google">Google Translate</string>
+    <string name="translation_method_yandex">Yandex Translate</string>
+    <string name="translation_method_google_api">Google API</string>
+    <string name="translation_method_yandex_api">Yandex API</string>
+    <string name="translation_method_selected">Translation method: %1$s</string>
+    <string name="offline_languages">Offline Languages</string>
+    <string name="download">Download</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="hide_bars">Hide navigation bars</string>
+    <string name="show_bars">Show navigation bars</string>
 </resources>
+

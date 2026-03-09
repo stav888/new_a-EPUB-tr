@@ -2,7 +2,7 @@
     name="debug"
     package="com.example.epubtranslator"
     minSdkVersion="26"
-    targetSdkVersion="33"
+    targetSdkVersion="34"
     debuggable="true"
     mergedManifest="build\intermediates\merged_manifest\debug\processDebugMainManifest\AndroidManifest.xml"
     manifestMergeReport="build\outputs\logs\manifest-merger-debug-report.txt"
@@ -26,6 +26,6 @@
       type="INSTRUMENTATION_TEST"
       applicationId="com.example.epubtranslator.test"
       generatedResourceFolders="build\generated\res\resValues\androidTest\debug"
-      desugaredMethodsFiles="C:\Users\Stav\.gradle\caches\8.12\transforms\a91b5916f03fc5ca66f408e3817f5b6c\transformed\D8BackportedDesugaredMethods.txt">
+      desugaredMethodsFiles="C:\Users\Stav\.gradle\caches\8.13\transforms\1aa210e6448450a4253797f06c895223\transformed\D8BackportedDesugaredMethods.txt">
   </artifact>
 </variant>

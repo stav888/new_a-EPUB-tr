@@ -7,7 +7,7 @@
     android:gravity="bottom"
     android:orientation="vertical"
     android:padding="16dp"
-    android:theme="@style/ThemeOverlay.AppCompat.Dark">
+    android:theme="@style/ThemeOverlay.Material3.Dark">
 
     <ImageView
         android:layout_width="64dp"
@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:paddingTop="8dp"
         android:text="@string/app_name"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
         android:textSize="20sp"
         android:textStyle="bold" />
 
@@ -31,5 +31,16 @@
         android:layout_height="wrap_content"
         android:text="@string/app_description"
         android:textStyle="italic" />
+
+    <TextView
+        android:id="@+id/navHeaderVersionText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="v2.0.0"
+        android:textSize="12sp"
+        android:textColor="@android:color/white"
+        android:alpha="0.7"
+        android:fontFamily="monospace" />
 
 </LinearLayout>

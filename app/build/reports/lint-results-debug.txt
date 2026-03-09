@@ -1,6 +1,16 @@
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\AndroidManifest.xml:8: Warning: READ_EXTERNAL_STORAGE is deprecated (and is not granted) when targeting Android 13+. If you need to query or interact with MediaStore or media files on the shared storage, you should instead use one or more new storage permissions: READ_MEDIA_IMAGES, READ_MEDIA_VIDEO or READ_MEDIA_AUDIO. [ScopedStorage]
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\lint-baseline.xml: Hint: 87 warnings were filtered out because they are listed in the baseline file, lint-baseline.xml [LintBaseline]
+C:\Users\Stav\IdeaProjects\new_a\app\lint-baseline.xml: Hint: 16 errors/warnings were listed in the baseline file (lint-baseline.xml) but not found in the project; perhaps they have been fixed? Another possible explanation is that lint recently stopped analyzing (and including results from) dependent projects by default. You can turn this back on with android.lintOptions.checkDependencies=true. Unmatched issue types: ContentDescription (2), HardcodedText (3), InflateParams, ProtectedPermissions, ScopedStorage (2), SetTextI18n, SmallSp, UnusedResources, UseAppTint (2), UseCompoundDrawables, VectorPath [LintBaselineFixed]
+
+   Explanation for issues of type "LintBaselineFixed":
+   If a lint baseline describes a problem which is no longer reported, then
+   the problem has either been fixed, or perhaps the issue type has been
+   disabled. In any case, the entry can be removed from the baseline (such
+   that if the issue is reintroduced at some point, lint will complain rather
+   than just silently starting to match the old baseline entry again.)
+
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\AndroidManifest.xml:10: Warning: WRITE_EXTERNAL_STORAGE no longer provides write access when targeting Android 11+, even when using requestLegacyExternalStorage [ScopedStorage]
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    Explanation for issues of type "ScopedStorage":
    Scoped storage is enforced on Android 10+ (or Android 11+ if using
@@ -32,8 +42,30 @@ C:\Users\Stav\IdeaProjects\new_a\app\src\main\AndroidManifest.xml:8: Warning: RE
 
    https://goo.gle/android-storage-usecases
 
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:12: Warning: Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details. [OldTargetApi]
-        targetSdkVersion 33
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:1228: Warning: Implicitly using the default locale is a common source of bugs: Use String.format(Locale, ...) instead [DefaultLocale]
+            binding.readingProgressTextView.text = String.format("%.1f%%", adjustedPercent)
+                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:1228: Warning: Implicitly using the default locale is a common source of bugs: Use String.format(Locale, ...) instead [DefaultLocale]
+            binding.readingProgressTextView.text = String.format("%.1f%%", adjustedPercent)
+                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "DefaultLocale":
+   Calling String#toLowerCase() or #toUpperCase() without specifying an
+   explicit locale is a common source of bugs. The reason for that is that
+   those methods will use the current locale on the user's device, and even
+   though the code appears to work correctly when you are developing the app,
+   it will fail in some locales. For example, in the Turkish locale, the
+   uppercase replacement for i is not I.
+
+   If you want the methods to just perform ASCII replacement, for example to
+   convert an enum name, call String#toUpperCase(Locale.ROOT) instead. If you
+   really want to use the current locale, call
+   String#toUpperCase(Locale.getDefault()) instead.
+
+   https://developer.android.com/reference/java/util/Locale.html#default_locale
+
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:28: Warning: Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details. [OldTargetApi]
+        targetSdkVersion 34
         ~~~~~~~~~~~~~~~~~~~
 
    Explanation for issues of type "OldTargetApi":
@@ -55,37 +87,42 @@ C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:12: Warning: Not targeting the
 
    https://developer.android.com/distribute/best-practices/develop/target-sdk.html
 
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:8: Warning: A newer version of compileSdkVersion than 33 is available: 35 [GradleDependency]
-    compileSdkVersion 33
+C:\Users\Stav\IdeaProjects\new_a\gradle\wrapper\gradle-wrapper.properties:3: Warning: A newer version of Gradle than 8.13 is available: 8.14.4 [AndroidGradlePluginVersion]
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-bin.zip
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "AndroidGradlePluginVersion":
+   This detector looks for usage of the Android Gradle Plugin where the
+   version you are using is not the current stable release. Using older
+   versions is fine, and there are cases where you deliberately want to stick
+   with an older version. However, you may simply not be aware that a more
+   recent version is available, and that is what this lint check helps find.
+
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:24: Warning: A newer version of compileSdkVersion than 34 is available: 36 [GradleDependency]
+    compileSdkVersion 34
     ~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:37: Warning: A newer version of androidx.core:core-ktx than 1.9.0 is available: 1.16.0 [GradleDependency]
-    implementation 'androidx.core:core-ktx:1.9.0'
-                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:38: Warning: A newer version of androidx.appcompat:appcompat than 1.6.1 is available: 1.7.0 [GradleDependency]
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:107: Warning: A newer version of androidx.core:core-ktx than 1.12.0 is available: 1.17.0 [GradleDependency]
+    implementation 'androidx.core:core-ktx:1.12.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:108: Warning: A newer version of androidx.appcompat:appcompat than 1.6.1 is available: 1.7.1 [GradleDependency]
     implementation 'androidx.appcompat:appcompat:1.6.1'
                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:39: Warning: A newer version of com.google.android.material:material than 1.8.0 is available: 1.12.0 [GradleDependency]
-    implementation 'com.google.android.material:material:1.8.0'
-                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:40: Warning: A newer version of androidx.constraintlayout:constraintlayout than 2.1.4 is available: 2.2.1 [GradleDependency]
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:109: Warning: A newer version of androidx.constraintlayout:constraintlayout than 2.1.4 is available: 2.2.1 [GradleDependency]
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:48: Warning: A newer version of com.squareup.okhttp3:okhttp than 4.10.0 is available: 4.11.0 [GradleDependency]
-    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
-                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:49: Warning: A newer version of com.squareup.okhttp3:logging-interceptor than 4.10.0 is available: 4.11.0 [GradleDependency]
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.10.0'
-                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:52: Warning: A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.6.4 is available: 1.7.3 [GradleDependency]
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
-                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:53: Warning: A newer version of androidx.lifecycle:lifecycle-viewmodel-ktx than 2.6.1 is available: 2.8.7 [GradleDependency]
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1'
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:112: Warning: A newer version of com.google.android.material:material than 1.11.0 is available: 1.13.0 [GradleDependency]
+    implementation 'com.google.android.material:material:1.11.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:125: Warning: A newer version of androidx.lifecycle:lifecycle-viewmodel-ktx than 2.7.0 is available: 2.10.0 [GradleDependency]
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:57: Warning: A newer version of androidx.test.ext:junit than 1.1.5 is available: 1.2.1 [GradleDependency]
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:126: Warning: A newer version of androidx.lifecycle:lifecycle-livedata-ktx than 2.7.0 is available: 2.10.0 [GradleDependency]
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:162: Warning: A newer version of androidx.test.ext:junit than 1.1.5 is available: 1.3.0 [GradleDependency]
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:58: Warning: A newer version of androidx.test.espresso:espresso-core than 3.5.1 is available: 3.6.1 [GradleDependency]
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:163: Warning: A newer version of androidx.test.espresso:espresso-core than 3.5.1 is available: 3.7.0 [GradleDependency]
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -96,12 +133,39 @@ C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:58: Warning: A newer version o
    However, you may simply not be aware that a more recent version is
    available, and that is what this lint check helps find.
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\adapter\RecentBooksAdapter.kt:64: Warning: It will always be more efficient to use more specific change events if you can. Rely on notifyDataSetChanged as a last resort. [NotifyDataSetChanged]
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:115: Warning: A newer version of org.jsoup:jsoup than 1.17.2 is available: 1.22.1 [NewerVersionAvailable]
+    implementation 'org.jsoup:jsoup:1.17.2'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:118: Warning: A newer version of com.squareup.retrofit2:retrofit than 2.9.0 is available: 3.0.0 [NewerVersionAvailable]
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:119: Warning: A newer version of com.squareup.retrofit2:converter-gson than 2.9.0 is available: 3.0.0 [NewerVersionAvailable]
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:120: Warning: A newer version of com.squareup.okhttp3:okhttp than 4.12.0 is available: 5.3.2 [NewerVersionAvailable]
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:121: Warning: A newer version of com.squareup.okhttp3:logging-interceptor than 4.12.0 is available: 5.3.2 [NewerVersionAvailable]
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:124: Warning: A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.7.3 is available: 1.10.2 [NewerVersionAvailable]
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\build.gradle:147: Warning: A newer version of com.github.bumptech.glide:glide than 4.16.0 is available: 5.0.5 [NewerVersionAvailable]
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "NewerVersionAvailable":
+   This detector checks with a central repository to see if there are newer
+   versions available for the dependencies used by this project. This is
+   similar to the GradleDependency check, which checks for newer versions
+   available in the Android SDK tools and libraries, but this works with any
+   MavenCentral dependency, and connects to the library every time, which
+   makes it more flexible but also much slower.
+
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\SimpleSearchActivity.kt:404: Warning: It will always be more efficient to use more specific change events if you can. Rely on notifyDataSetChanged as a last resort. [NotifyDataSetChanged]
         notifyDataSetChanged()
         ~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\adapter\RecentBooksAdapter.kt:70: Warning: It will always be more efficient to use more specific change events if you can. Rely on notifyDataSetChanged as a last resort. [NotifyDataSetChanged]
-            notifyDataSetChanged()
-            ~~~~~~~~~~~~~~~~~~~~~~
 
    Explanation for issues of type "NotifyDataSetChanged":
    The RecyclerView adapter's onNotifyDataSetChanged method does not specify
@@ -109,31 +173,12 @@ C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\ad
    all existing items and structure may no longer be valid. `LayoutManager`s
    will be forced to fully rebind and relayout all visible views.
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\item_recent_book.xml:11: Warning: Set android:baselineAligned="false" on this element for better performance [DisableBaselineAlignment]
-    <LinearLayout
-     ~~~~~~~~~~~~
-
-   Explanation for issues of type "DisableBaselineAlignment":
-   When a LinearLayout is used to distribute the space proportionally between
-   nested layouts, the baseline alignment property should be turned off to
-   make the layout computation faster.
-
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\dialog_translation.xml:20: Warning: Use a layout_height of 0dp instead of wrap_content for better performance [InefficientWeight]
-            android:layout_height="wrap_content"
-            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-   Explanation for issues of type "InefficientWeight":
-   When only a single widget in a LinearLayout defines a weight, it is more
-   efficient to assign a width/height of 0dp to it since it will absorb all
-   the remaining space anyway. With a declared width/height of 0dp it does not
-   have to measure its own size first.
-
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\dialog_color_picker.xml:7: Warning: Possible overdraw: Root element paints background @color/white with a theme that also paints a background (inferred theme is @style/Theme.EPUBTranslator) [Overdraw]
-    android:background="@color/white">
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\nav_header.xml:6: Warning: Possible overdraw: Root element paints background @color/purple_700 with a theme that also paints a background (inferred theme is @style/Theme.EPUBTranslator) [Overdraw]
-    android:background="@color/purple_700"
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\item_search_result.xml:7: Warning: Possible overdraw: Root element paints background ?attr/selectableItemBackground with a theme that also paints a background (inferred theme is @style/Theme.EPUBTranslator) [Overdraw]
+    android:background="?attr/selectableItemBackground"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\item_search_suggestion.xml:9: Warning: Possible overdraw: Root element paints background ?attr/selectableItemBackground with a theme that also paints a background (inferred theme is @style/Theme.EPUBTranslator) [Overdraw]
+    android:background="?attr/selectableItemBackground"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    Explanation for issues of type "Overdraw":
    If you set a background drawable on a root view, then you should use a
@@ -156,102 +201,111 @@ C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\nav_header.xml:6: Warni
    performance if you pre-mix the background with your drawable and use that
    resulting image or color as a custom theme background instead.
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:4: Warning: The resource R.color.purple_200 appears to be unused [UnusedResources]
-    <color name="purple_200">#FFBB86FC</color>
-           ~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:11: Warning: The resource R.color.translucent_black appears to be unused [UnusedResources]
-    <color name="translucent_black">#80000000</color>
-           ~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:14: Warning: The resource R.color.highlight_yellow appears to be unused [UnusedResources]
-    <color name="highlight_yellow">#FFFFEB3B</color>
-           ~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:15: Warning: The resource R.color.highlight_green appears to be unused [UnusedResources]
-    <color name="highlight_green">#FF76FF03</color>
-           ~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:16: Warning: The resource R.color.highlight_blue appears to be unused [UnusedResources]
-    <color name="highlight_blue">#FF2196F3</color>
-           ~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:17: Warning: The resource R.color.highlight_pink appears to be unused [UnusedResources]
-    <color name="highlight_pink">#FFFF4081</color>
-           ~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:18: Warning: The resource R.color.highlight_purple appears to be unused [UnusedResources]
-    <color name="highlight_purple">#FFE040FB</color>
-           ~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:21: Warning: The resource R.color.highlight_text_yellow appears to be unused [UnusedResources]
-    <color name="highlight_text_yellow">#80FFEB3B</color>
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:22: Warning: The resource R.color.highlight_text_green appears to be unused [UnusedResources]
-    <color name="highlight_text_green">#8076FF03</color>
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\bottom_navigation_menu.xml:2: Warning: The resource R.menu.bottom_navigation_menu appears to be unused [UnusedResources]
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:27: Warning: The resource R.color.md_theme_light_error appears to be unused [UnusedResources]
+    <color name="md_theme_light_error">#BA1A1A</color>
            ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:23: Warning: The resource R.color.highlight_text_blue appears to be unused [UnusedResources]
-    <color name="highlight_text_blue">#802196F3</color>
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:24: Warning: The resource R.color.highlight_text_pink appears to be unused [UnusedResources]
-    <color name="highlight_text_pink">#80FF4081</color>
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:25: Warning: The resource R.color.highlight_text_purple appears to be unused [UnusedResources]
-    <color name="highlight_text_purple">#80E040FB</color>
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\dialog_color_picker.xml:2: Warning: The resource R.layout.dialog_color_picker appears to be unused [UnusedResources]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:28: Warning: The resource R.color.md_theme_light_onError appears to be unused [UnusedResources]
+    <color name="md_theme_light_onError">#FFFFFF</color>
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:29: Warning: The resource R.color.md_theme_light_errorContainer appears to be unused [UnusedResources]
+    <color name="md_theme_light_errorContainer">#FFDAD6</color>
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:30: Warning: The resource R.color.md_theme_light_onErrorContainer appears to be unused [UnusedResources]
+    <color name="md_theme_light_onErrorContainer">#410002</color>
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:39: Warning: The resource R.color.stitch_background_dark appears to be unused [UnusedResources]
+    <color name="stitch_background_dark">#101922</color>
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:48: Warning: The resource R.color.purple_300 appears to be unused [UnusedResources]
+    <color name="purple_300">#FF9C27B0</color>
+           ~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:51: Warning: The resource R.color.teal_200 appears to be unused [UnusedResources]
+    <color name="teal_200">#FF03DAC5</color>
+           ~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:52: Warning: The resource R.color.teal_700 appears to be unused [UnusedResources]
+    <color name="teal_700">#FF018786</color>
+           ~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:53: Warning: The resource R.color.black appears to be unused [UnusedResources]
+    <color name="black">#FF000000</color>
+           ~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\colors.xml:55: Warning: The resource R.color.light_gray appears to be unused [UnusedResources]
+    <color name="light_gray">#FFF5F5F5</color>
+           ~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\flat_button_background.xml:2: Warning: The resource R.drawable.flat_button_background appears to be unused [UnusedResources]
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\ic_bubble_small.xml:1: Warning: The resource R.drawable.ic_bubble_small appears to be unused [UnusedResources]
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\ic_home.xml:1: Warning: The resource R.drawable.ic_home appears to be unused [UnusedResources]
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\ic_menu_drawer.xml:2: Warning: The resource R.drawable.ic_menu_drawer appears to be unused [UnusedResources]
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\ic_note.xml:2: Warning: The resource R.drawable.ic_note appears to be unused [UnusedResources]
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\ic_person.xml:1: Warning: The resource R.drawable.ic_person appears to be unused [UnusedResources]
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\ic_text_snippet.xml:2: Warning: The resource R.drawable.ic_text_snippet appears to be unused [UnusedResources]
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\paragraph_popup_menu.xml:2: Warning: The resource R.layout.paragraph_popup_menu appears to be unused [UnusedResources]
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 ^
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\main_menu.xml:2: Warning: The resource R.menu.main_menu appears to be unused [UnusedResources]
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\rounded_background.xml:2: Warning: The resource R.drawable.rounded_background appears to be unused [UnusedResources]
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
 ^
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:9: Warning: The resource R.string.translation_language appears to be unused [UnusedResources]
-    <string name="translation_language">Translation Language</string>
-            ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:12: Warning: The resource R.string.translate appears to be unused [UnusedResources]
-    <string name="translate">Translate</string>
-            ~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:15: Warning: The resource R.string.loading_book appears to be unused [UnusedResources]
-    <string name="loading_book">Loading book, please wait…</string>
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:24: Warning: The resource R.string.recent_books appears to be unused [UnusedResources]
+    <string name="recent_books">Recent Books</string>
             ~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:18: Warning: The resource R.string.no_text_selected appears to be unused [UnusedResources]
-    <string name="no_text_selected">No text selected</string>
-            ~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:20: Warning: The resource R.string.powered_by_libretranslate appears to be unused [UnusedResources]
-    <string name="powered_by_libretranslate">Powered by LibreTranslate</string>
-            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:21: Warning: The resource R.string.powered_by_mymemory appears to be unused [UnusedResources]
-    <string name="powered_by_mymemory">Powered by MyMemory Translation</string>
-            ~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:28: Warning: The resource R.string.inline_translation appears to be unused [UnusedResources]
-    <string name="inline_translation">Inline Translation</string>
-            ~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:29: Warning: The resource R.string.previous appears to be unused [UnusedResources]
-    <string name="previous">Previous</string>
-            ~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:30: Warning: The resource R.string.next appears to be unused [UnusedResources]
-    <string name="next">Next</string>
-            ~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:32: Warning: The resource R.string.original appears to be unused [UnusedResources]
-    <string name="original">Original</string>
-            ~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:33: Warning: The resource R.string.translated appears to be unused [UnusedResources]
-    <string name="translated">Translated</string>
-            ~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:43: Warning: The resource R.string.choose_highlight_color appears to be unused [UnusedResources]
-    <string name="choose_highlight_color">Choose highlight color</string>
-            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:44: Warning: The resource R.string.remove_highlight appears to be unused [UnusedResources]
-    <string name="remove_highlight">Remove highlight</string>
-            ~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:45: Warning: The resource R.string.text_highlighted appears to be unused [UnusedResources]
-    <string name="text_highlighted">Text highlighted</string>
-            ~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:46: Warning: The resource R.string.highlight_removed appears to be unused [UnusedResources]
-    <string name="highlight_removed">Highlight removed</string>
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:31: Warning: The resource R.string.translating appears to be unused [UnusedResources]
+    <string name="translating">Translating…</string>
+            ~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:36: Warning: The resource R.string.toggle_view appears to be unused [UnusedResources]
+    <string name="toggle_view">Toggle view</string>
+            ~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:47: Warning: The resource R.string.paragraph_translated appears to be unused [UnusedResources]
+    <string name="paragraph_translated">Paragraph translated</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:48: Warning: The resource R.string.error_translating appears to be unused [UnusedResources]
+    <string name="error_translating">Error translating text</string>
             ~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:52: Warning: The resource R.string.api_selection appears to be unused [UnusedResources]
-    <string name="api_selection">Translation API</string>
-            ~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\themes.xml:24: Warning: The resource R.style.Theme_EPUBTranslator_AppBarOverlay appears to be unused [UnusedResources]
-    <style name="Theme.EPUBTranslator.AppBarOverlay" parent="ThemeOverlay.AppCompat.Light" />
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\themes.xml:26: Warning: The resource R.style.Theme_EPUBTranslator_PopupOverlay appears to be unused [UnusedResources]
-    <style name="Theme.EPUBTranslator.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:54: Warning: The resource R.string.translation_removed appears to be unused [UnusedResources]
+    <string name="translation_removed">Translation removed</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:63: Warning: The resource R.string.offline_languages appears to be unused [UnusedResources]
+    <string name="offline_languages">Offline Languages</string>
+            ~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:64: Warning: The resource R.string.download appears to be unused [UnusedResources]
+    <string name="download">Download</string>
+            ~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\strings.xml:65: Warning: The resource R.string.downloaded appears to be unused [UnusedResources]
+    <string name="downloaded">Downloaded</string>
+            ~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\themes.xml:71: Warning: The resource R.style.StitchTextAppearance_Headline1 appears to be unused [UnusedResources]
+    <style name="StitchTextAppearance.Headline1" parent="TextAppearance.MaterialComponents.Headline1">
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\themes.xml:78: Warning: The resource R.style.StitchTextAppearance_Body1 appears to be unused [UnusedResources]
+    <style name="StitchTextAppearance.Body1" parent="TextAppearance.MaterialComponents.Body1">
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\themes.xml:85: Warning: The resource R.style.StitchTextAppearance_Body2 appears to be unused [UnusedResources]
+    <style name="StitchTextAppearance.Body2" parent="TextAppearance.MaterialComponents.Body2">
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\thumbnail_border_overlay.xml:2: Warning: The resource R.drawable.thumbnail_border_overlay appears to be unused [UnusedResources]
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\view_toggle_selected.xml:2: Warning: The resource R.drawable.view_toggle_selected appears to be unused [UnusedResources]
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\drawable\view_toggle_unselected.xml:2: Warning: The resource R.drawable.view_toggle_unselected appears to be unused [UnusedResources]
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+^
 
    Explanation for issues of type "UnusedResources":
    Unused resources make applications larger and slow down builds.
@@ -267,101 +321,167 @@ C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\values\themes.xml:26: Warning:
    lint.unused-resources.exclude-tests =true.
    ,
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\mipmap\ic_launcher.xml:2: Warning: The application adaptive icon is missing a monochrome tag [MonochromeLauncherIcon]
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-^
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\mipmap\ic_launcher_round.xml:2: Warning: The application adaptive roundIcon is missing a monochrome tag [MonochromeLauncherIcon]
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-^
+   Available options:
 
-   Explanation for issues of type "MonochromeLauncherIcon":
-   If android:roundIcon and android:icon are both in your manifest, you must
-   either remove the reference to android:roundIcon if it is not needed; or,
-   supply the monochrome icon in the drawable defined by the android:roundIcon
-   and android:icon attribute.
+   **skip-libraries** (default is true):
+   Whether the unused resource check should skip reporting unused resources in libraries.
 
-   For example, if android:roundIcon and android:icon are both in the
-   manifest, a launcher might choose to use android:roundIcon over
-   android:icon to display the adaptive app icon. Therefore, your themed
-   application iconwill not show if your monochrome attribute is not also
-   specified in android:roundIcon.
+   Many libraries will declare resources that are part of the library surface; other modules depending on the library will also reference the resources. To avoid reporting all these resources as unused (in the context of a library), the unused resource check normally skips reporting unused resources in libraries. Instead, run the unused resource check on the consuming app module (along with `checkDependencies=true`).
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\dialog_color_picker.xml:23: Warning: Buttons in button bars should be borderless; use style="?android:attr/buttonBarButtonStyle" (and ?android:attr/buttonBarStyle on the parent) [ButtonStyle]
-        <Button
-         ~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\dialog_color_picker.xml:30: Warning: Buttons in button bars should be borderless; use style="?android:attr/buttonBarButtonStyle" (and ?android:attr/buttonBarStyle on the parent) [ButtonStyle]
-        <Button
-         ~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\dialog_color_picker.xml:37: Warning: Buttons in button bars should be borderless; use style="?android:attr/buttonBarButtonStyle" (and ?android:attr/buttonBarStyle on the parent) [ButtonStyle]
-        <Button
-         ~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\dialog_color_picker.xml:44: Warning: Buttons in button bars should be borderless; use style="?android:attr/buttonBarButtonStyle" (and ?android:attr/buttonBarStyle on the parent) [ButtonStyle]
-        <Button
-         ~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\dialog_color_picker.xml:51: Warning: Buttons in button bars should be borderless; use style="?android:attr/buttonBarButtonStyle" (and ?android:attr/buttonBarStyle on the parent) [ButtonStyle]
-        <Button
-         ~~~~~~
+   However, there are cases where you want to check that all the resources declared in a library are used; in that case, you can disable the skip option.
 
-   Explanation for issues of type "ButtonStyle":
-   Button bars typically use a borderless style for the buttons. Set the
-   style="?android:attr/buttonBarButtonStyle" attribute on each of the
-   buttons, and set style="?android:attr/buttonBarStyle" on the parent layout
+   To configure this option, use a `lint.xml` file with an <option> like this:
 
-   https://d.android.com/r/studio-ui/designer/material/dialogs
+   ```xml
+   <lint>
+       <issue id="UnusedResources">
+           <option name="skip-libraries" value="true" />
+       </issue>
+   </lint>
+   ```
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\main_menu.xml:8: Warning: Prefer "ifRoom" instead of "always" [AlwaysShowAction]
-        app:showAsAction="always" />
-        ~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:206: Warning: This text field does not specify an inputType [TextFields]
+                <EditText
+                 ~~~~~~~~
 
-   Explanation for issues of type "AlwaysShowAction":
-   Using showAsAction="always" in menu XML, or MenuItem.SHOW_AS_ACTION_ALWAYS
-   in Java code is usually a deviation from the user interface style guide.Use
-   ifRoom or the corresponding MenuItem.SHOW_AS_ACTION_IF_ROOM instead.
+   Explanation for issues of type "TextFields":
+   Providing an inputType attribute on a text field improves usability because
+   depending on the data to be input, optimized keyboards can be shown to the
+   user (such as just digits and parentheses for a phone number). 
 
-   If always is used sparingly there are usually no problems and behavior is
-   roughly equivalent to ifRoom but with preference over other ifRoom items.
-   Using it more than twice in the same menu is a bad idea.
+   The lint detector also looks at the id of the view, and if the id offers a
+   hint of the purpose of the field (for example, the id contains the phrase
+   phone or email), then lint will also ensure that the inputType contains the
+   corresponding type attributes.
 
-   This check looks for menu XML files that contain more than two always
-   actions, or some always actions and no ifRoom actions. In Java code, it
-   looks for projects that contain references to
-   MenuItem.SHOW_AS_ACTION_ALWAYS and no references to
-   MenuItem.SHOW_AS_ACTION_IF_ROOM.
+   If you really want to keep the text field generic, you can suppress this
+   warning by setting inputType="text".
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:25: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\item_recent_book_grid.xml:92: Warning: Avoid using sizes smaller than 11sp: 10.5sp [SmallSp]
+                android:textSize="10.5sp"
+                ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "SmallSp":
+   Avoid using sizes smaller than 11sp.
+
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:206: Warning: Missing autofillHints attribute [Autofill]
+                <EditText
+                 ~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:104: Warning: Missing autofillHints attribute [Autofill]
+                    <EditText
+                     ~~~~~~~~
+
+   Explanation for issues of type "Autofill":
+   Specify an autofillHints attribute when targeting SDK version 26 or higher
+   or explicitly specify that the view is not important for autofill. Your app
+   can help an autofill service classify the data correctly by providing the
+   meaning of each view that could be autofillable, such as views representing
+   usernames, passwords, credit card fields, email addresses, etc.
+
+   The hints can have any value, but it is recommended to use predefined
+   values like 'username' for a username or 'creditCardNumber' for a credit
+   card number. For a list of all predefined autofill hint constants, see the
+   AUTOFILL_HINT_ constants in the View reference at
+   https://developer.android.com/reference/android/view/View.html.
+
+   You can mark a view unimportant for autofill by specifying an
+   importantForAutofill attribute on that view or a parent view. See
+   https://developer.android.com/reference/android/view/View.html#setImportant
+   ForAutofill(int).
+
+   https://developer.android.com/guide/topics/text/autofill.html
+
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:31: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
         prefs.edit().putInt(key, position).apply()
         ~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:42: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:48: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
         prefs.edit().putInt(key, scrollY).apply()
         ~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:60: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:66: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
         prefs.edit()
         ~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:76: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        prefs.edit().clear().apply()
+        ~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:112: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+            translationPrefs.edit().putString(key, jsonString).apply()
+            ~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:237: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        translationPrefs.edit().remove(key).apply()
+        ~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\BookPositionManager.kt:249: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        val editor = translationPrefs.edit()
+                     ~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:1248: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        prefs.edit()
+        ~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:1523: Warning: Use the KTX extension property View.isVisible instead? [UseKtx]
+            if (binding.inlineSearchLayout.visibility == View.VISIBLE) {
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:2076: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        getSharedPreferences("epub_spine_prefs", Context.MODE_PRIVATE)
+        ^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:4637: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                            android.net.Uri.parse("https://translate.google.com/?sl=auto&tl=" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:4659: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                            android.net.Uri.parse("https://translate.yandex.com/?lang=auto-" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:4697: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                                android.net.Uri.parse("https://translate.google.com/?sl=auto&tl=" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:4735: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                                android.net.Uri.parse("https://translate.yandex.com/?lang=auto-" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:4871: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                        val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://translate.google.com/?sl=auto&tl=" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
+                                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:4889: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                        val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://translate.yandex.com/?lang=auto-" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
+                                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:4923: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                            val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://translate.google.com/?sl=auto&tl=" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
+                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:4949: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                            val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://translate.yandex.com/?text=${android.net.Uri.encode(paragraphText)}"))
+                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:5668: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                    val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUrl))
+                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\translation\LanguageManager.kt:31: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
         prefs.edit().putString(KEY_TARGET_LANGUAGE, language.code).apply()
         ~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\MainActivity.kt:284: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\MainActivity.kt:402: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
         prefs.edit().putInt(KEY_VIEW_MODE, currentViewMode).apply()
         ~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\RecentBooksManager.kt:90: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\RecentBooksManager.kt:148: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
         prefs.edit().putString(KEY_RECENT_BOOKS, json).apply()
         ~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\RecentBooksManager.kt:106: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\data\RecentBooksManager.kt:164: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
         prefs.edit().remove(KEY_RECENT_BOOKS).apply()
         ~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\util\ThumbnailGenerator.kt:124: Warning: Use the KTX function createBitmap instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\SimpleSearchActivity.kt:287: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        prefs.edit()
+        ~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\util\ThumbnailGenerator.kt:143: Warning: Use the KTX extension function Bitmap.scale instead? [UseKtx]
+        val scaled = Bitmap.createScaledBitmap(source, scaledW, scaledH, true)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\util\ThumbnailGenerator.kt:144: Warning: Use the KTX function createBitmap instead? [UseKtx]
+        val output = Bitmap.createBitmap(targetW, targetH, Bitmap.Config.ARGB_8888)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\util\ThumbnailGenerator.kt:155: Warning: Use the KTX function createBitmap instead? [UseKtx]
         val bitmap = Bitmap.createBitmap(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, Bitmap.Config.ARGB_8888)
                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\util\ThumbnailGenerator.kt:156: Warning: Use the KTX function createBitmap instead? [UseKtx]
-        val scaledBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\translation\TranslationManager.kt:31: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\translation\TranslationManager.kt:32: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
         prefs.edit().putString(PREF_TRANSLATION_API, api.name).apply()
         ~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\YandexOfflineManager.kt:78: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\translation\TranslationManager.kt:59: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        prefs.edit().putString(PREF_TRANSLATION_METHOD, method.name).apply()
+        ~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\YandexOfflineManager.kt:90: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
                 sharedPreferences.edit().putBoolean("downloaded_${language.code}", true).apply()
                 ~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\YandexOfflineManager.kt:101: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\YandexOfflineManager.kt:113: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
                     sharedPreferences.edit().putBoolean("downloaded_${language.code}", false).apply()
                     ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -380,7 +500,9 @@ C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\Ya
    ```kotlin
    fun Path.readLines(charset: Charset = Charsets.UTF_8): List<String> { return Files.readAllLines(this, charset) }
    ```
-   This lint check will by default automatically omit parameters that match the default, so if your code was calling ```kotlin
+   This lint check will by default automatically omit parameters that match the default, so if your code was calling
+
+   ```kotlin
    Files.readAllLines(file, Charset.UTF_8)
    ```
    lint would replace this with
@@ -388,6 +510,7 @@ C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\Ya
    file.readLines()
    ```
    rather than
+
    ```kotlin
    file.readLines(Charset.UTF_8
    ```
@@ -418,49 +541,170 @@ C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\Ya
    </lint>
    ```
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:2041: Warning: Custom view `WebView` has setOnTouchListener called on it but does not override performClick [ClickableViewAccessibility]
-        binding.webView.setOnTouchListener { _, event ->
-        ^
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:2041: Warning: onTouch lambda should call View#performClick when a click is detected [ClickableViewAccessibility]
-        binding.webView.setOnTouchListener { _, event ->
-                                           ^
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:73: Warning: Missing contentDescription attribute on image [ContentDescription]
+                    <ImageView
+                     ~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\item_search_suggestion.xml:15: Warning: Missing contentDescription attribute on image [ContentDescription]
+    <ImageView
+     ~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\item_search_suggestion.xml:36: Warning: Missing contentDescription attribute on image [ContentDescription]
+    <ImageView
+     ~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:24: Warning: Missing contentDescription attribute on image [ContentDescription]
+        <ImageView
+         ~~~~~~~~~
 
-   Explanation for issues of type "ClickableViewAccessibility":
-   If a View that overrides onTouchEvent or uses an OnTouchListener does not
-   also implement performClick and call it when clicks are detected, the View
-   may not handle accessibility actions properly. Logic handling the click
-   actions should ideally be placed in View#performClick as some accessibility
-   services invoke performClick when a click action should occur.
+   Explanation for issues of type "ContentDescription":
+   Non-textual widgets like ImageViews and ImageButtons should use the
+   contentDescription attribute to specify a textual description of the widget
+   such that screen readers and other accessibility tools can adequately
+   describe the user interface.
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:383: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
-        binding.pageNumberTextView.text = "${pageIndex + 1} / $totalPages"
-                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\java\com\example\epubtranslator\EpubReaderActivity.kt:383: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
-        binding.pageNumberTextView.text = "${pageIndex + 1} / $totalPages"
-                                             ~~~~~~~~~~~~~
+   Note that elements in application screens that are purely decorative and do
+   not provide any content or enable a user action should not have
+   accessibility content descriptions. In this case, set their descriptions to
+   @null. If your app's minSdkVersion is 16 or higher, you can instead set
+   these graphical elements' android:importantForAccessibility attributes to
+   no.
 
-   Explanation for issues of type "SetTextI18n":
-   When calling TextView#setText
-   * Never call Number#toString() to format numbers; it will not handle
-   fraction separators and locale-specific digits properly. Consider using
-   String#format with proper format specifications (%d or %f) instead.
-   * Do not pass a string literal (e.g. "Hello") to display text. Hardcoded
-   text can not be properly translated to other languages. Consider using
-   Android resource strings instead.
-   * Do not build messages by concatenating text chunks. Such messages can not
-   be properly translated.
+   Note that for text fields, you should not set both the hint and the
+   contentDescription attributes since the hint will never be shown. Just set
+   the hint.
 
-   https://developer.android.com/guide/topics/resources/localization.html
+   https://developer.android.com/guide/topics/ui/accessibility/apps#special-cases
 
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:47: Warning: Hardcoded string "0 / 0", should use @string resource [HardcodedText]
-            android:text="0 / 0"
-            ~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\item_language.xml:25: Warning: Hardcoded string "Download language", should use @string resource [HardcodedText]
-        android:contentDescription="Download language"
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\item_language.xml:36: Warning: Hardcoded string "Delete language", should use @string resource [HardcodedText]
-        android:contentDescription="Delete language"
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:67: Warning: Hardcoded string "D", should use @string resource [HardcodedText]
+                        android:text="D"
+                        ~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:161: Warning: Hardcoded string "Reader settings", should use @string resource [HardcodedText]
+                    android:contentDescription="Reader settings"
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:212: Warning: Hardcoded string "Search in book...", should use @string resource [HardcodedText]
+                    android:hint="Search in book..."
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:226: Warning: Hardcoded string "Previous result", should use @string resource [HardcodedText]
+                    android:contentDescription="Previous result"
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:237: Warning: Hardcoded string "Next result", should use @string resource [HardcodedText]
+                    android:contentDescription="Next result"
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:247: Warning: Hardcoded string "[0/0]", should use @string resource [HardcodedText]
+                    android:text="[0/0]"
+                    ~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:261: Warning: Hardcoded string "Close search", should use @string resource [HardcodedText]
+                    android:contentDescription="Close search"
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:331: Warning: Hardcoded string "Page:", should use @string resource [HardcodedText]
+                android:text="Page:"
+                ~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:390: Warning: Hardcoded string "Go to first page", should use @string resource [HardcodedText]
+                    android:contentDescription="Go to first page"
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:402: Warning: Hardcoded string "Previous page", should use @string resource [HardcodedText]
+                    android:contentDescription="Previous page"
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:414: Warning: Hardcoded string "Next page", should use @string resource [HardcodedText]
+                    android:contentDescription="Next page"
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:427: Warning: Hardcoded string "Go to last page", should use @string resource [HardcodedText]
+                    android:contentDescription="Go to last page"
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_epub_reader.xml:440: Warning: Hardcoded string "0%", should use @string resource [HardcodedText]
+                android:text="0%"
+                ~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:39: Warning: Hardcoded string "My Books", should use @string resource [HardcodedText]
+                    android:text="My Books"
+                    ~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:64: Warning: Hardcoded string "Toggle View Mode", should use @string resource [HardcodedText]
+                    android:contentDescription="Toggle View Mode" />
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:75: Warning: Hardcoded string "Add Book", should use @string resource [HardcodedText]
+                    android:contentDescription="Add Book" />
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:102: Warning: Hardcoded string "Search", should use @string resource [HardcodedText]
+                        android:contentDescription="Search" />
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:111: Warning: Hardcoded string "Search my books", should use @string resource [HardcodedText]
+                        android:hint="Search my books"
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:156: Warning: Hardcoded string "Read", should use @string resource [HardcodedText]
+                        android:text="Read"
+                        ~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:168: Warning: Hardcoded string "Currently Reading", should use @string resource [HardcodedText]
+                        android:text="Currently Reading"
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:179: Warning: Hardcoded string "To Read", should use @string resource [HardcodedText]
+                        android:text="To Read"
+                        ~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:263: Warning: Hardcoded string "Add Your First Book", should use @string resource [HardcodedText]
+                    android:text="Add Your First Book"
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\activity_main.xml:284: Warning: Hardcoded string "Menu", should use @string resource [HardcodedText]
+            android:text="Menu"
+            ~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\book_context_menu.xml:5: Warning: Hardcoded string "Share Book", should use @string resource [HardcodedText]
+        android:title="Share Book"
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\book_context_menu.xml:10: Warning: Hardcoded string "Delete Book", should use @string resource [HardcodedText]
+        android:title="Delete Book"
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\bottom_navigation_menu.xml:6: Warning: Hardcoded string "Home", should use @string resource [HardcodedText]
+        android:title="Home" />
+        ~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\bottom_navigation_menu.xml:11: Warning: Hardcoded string "Search", should use @string resource [HardcodedText]
+        android:title="Search" />
+        ~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\bottom_navigation_menu.xml:16: Warning: Hardcoded string "Add Book", should use @string resource [HardcodedText]
+        android:title="Add Book" />
+        ~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\bottom_navigation_menu.xml:21: Warning: Hardcoded string "Profile", should use @string resource [HardcodedText]
+        android:title="Profile" />
+        ~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\main_menu.xml:16: Warning: Hardcoded string "Refresh Covers", should use @string resource [HardcodedText]
+        android:title="Refresh Covers"
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:34: Warning: Hardcoded string "Copy Text", should use @string resource [HardcodedText]
+            android:text="Copy Text"
+            ~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:74: Warning: Hardcoded string "Open Google Translate", should use @string resource [HardcodedText]
+                android:contentDescription="Open Google Translate" />
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:79: Warning: Hardcoded string "Google", should use @string resource [HardcodedText]
+                android:text="Google"
+                ~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:112: Warning: Hardcoded string "Open Google Translate floating", should use @string resource [HardcodedText]
+                android:contentDescription="Open Google Translate floating" />
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:117: Warning: Hardcoded string "Bubble", should use @string resource [HardcodedText]
+                android:text="Bubble"
+                ~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:159: Warning: Hardcoded string "Open Yandex Translate", should use @string resource [HardcodedText]
+                android:contentDescription="Open Yandex Translate" />
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:164: Warning: Hardcoded string "Yandex", should use @string resource [HardcodedText]
+                android:text="Yandex"
+                ~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:197: Warning: Hardcoded string "Open Yandex Translate floating", should use @string resource [HardcodedText]
+                android:contentDescription="Open Yandex Translate floating" />
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\popup_paragraph_menu.xml:202: Warning: Hardcoded string "Bubble", should use @string resource [HardcodedText]
+                android:text="Bubble"
+                ~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\translation_method_menu.xml:6: Warning: Hardcoded string "D - Default API", should use @string resource [HardcodedText]
+        android:title="D - Default API"
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\translation_method_menu.xml:11: Warning: Hardcoded string "G - Google Translate", should use @string resource [HardcodedText]
+        android:title="G - Google Translate"
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\translation_method_menu.xml:16: Warning: Hardcoded string "Y - Yandex Translate", should use @string resource [HardcodedText]
+        android:title="Y - Yandex Translate"
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\translation_method_menu.xml:21: Warning: Hardcoded string "G2 - Google API", should use @string resource [HardcodedText]
+        android:title="G2 - Google API"
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\menu\translation_method_menu.xml:26: Warning: Hardcoded string "Y2 - Yandex API", should use @string resource [HardcodedText]
+        android:title="Y2 - Yandex API"
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    Explanation for issues of type "HardcodedText":
    Hardcoding text attributes directly in layout files is bad for several
@@ -476,4 +720,4 @@ C:\Users\Stav\IdeaProjects\new_a\app\src\main\res\layout\item_language.xml:36: W
    There are quickfixes to automatically extract this hardcoded string into a
    resource lookup.
 
-0 errors, 78 warnings
+0 errors, 142 warnings (and 87 warnings filtered by baseline lint-baseline.xml)

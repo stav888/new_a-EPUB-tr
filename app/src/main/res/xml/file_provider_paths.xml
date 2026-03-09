@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- External storage paths for EPUB files -->
+    <external-path name="external_files" path="." />
+    
+    <!-- Internal storage paths -->
+    <files-path name="internal_files" path="." />
+    
+    <!-- Cache directory -->
+    <cache-path name="cache_files" path="." />
+    
+    <!-- External cache directory -->
+    <external-cache-path name="external_cache" path="." />
+    
+    <!-- Downloads directory -->
+    <external-path name="downloads" path="Download/" />
+    
+    <!-- Documents directory -->
+    <external-path name="documents" path="Documents/" />
+</paths>

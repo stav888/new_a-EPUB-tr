@@ -11,4 +11,9 @@
         android:icon="@android:drawable/ic_menu_sort_by_size"
         android:title="@string/menu"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/action_refresh_covers"
+        android:title="Refresh Covers"
+        android:icon="@android:drawable/ic_menu_rotate"
+        app:showAsAction="never" />
 </menu>

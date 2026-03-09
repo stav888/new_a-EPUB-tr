@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/popup_background"
+    android:padding="8dp"
+    android:elevation="8dp">
+
+    <!-- Copy Text Button -->
+    <LinearLayout
+        android:id="@+id/copyTextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp"
+        android:minWidth="200dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@android:drawable/ic_menu_save"
+            app:tint="@color/stitch_text_secondary"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Copy Text"
+            android:textSize="14sp"
+            android:textColor="@color/stitch_text_primary" />
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/stitch_text_secondary"
+        android:alpha="0.2"
+        android:layout_marginVertical="4dp" />
+
+    <!-- Google Translate Row: Split horizontally -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:minWidth="240dp">
+
+        <!-- Google Translate App Button (Left Side) -->
+        <LinearLayout
+            android:id="@+id/googleTranslateButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="12dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_google_translate"
+                app:tint="@color/stitch_text_secondary"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Open Google Translate" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Google"
+                android:textSize="13sp"
+                android:textColor="@color/stitch_text_primary" />
+
+        </LinearLayout>
+
+        <!-- Vertical Separator -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/stitch_text_secondary"
+            android:alpha="0.3"
+            android:layout_marginVertical="8dp" />
+
+        <!-- Google Translate Bubble Button (Right Side) -->
+        <LinearLayout
+            android:id="@+id/googleTranslateBubble"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="12dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_google_translate_bubble"
+                app:tint="@color/stitch_text_secondary"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Open Google Translate floating" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bubble"
+                android:textSize="13sp"
+                android:textColor="@color/stitch_text_primary" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/stitch_text_secondary"
+        android:alpha="0.2"
+        android:layout_marginVertical="4dp" />
+
+    <!-- Yandex Translate Row: Split horizontally -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:minWidth="240dp">
+
+        <!-- Yandex Translate App Button (Left Side) -->
+        <LinearLayout
+            android:id="@+id/yandexTranslateButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="12dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@android:drawable/ic_menu_send"
+                app:tint="@color/stitch_text_secondary"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Open Yandex Translate" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Yandex"
+                android:textSize="13sp"
+                android:textColor="@color/stitch_text_primary" />
+
+        </LinearLayout>
+
+        <!-- Vertical Separator -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/stitch_text_secondary"
+            android:alpha="0.3"
+            android:layout_marginVertical="8dp" />
+
+        <!-- Yandex Translate Bubble Button (Right Side) -->
+        <LinearLayout
+            android:id="@+id/yandexTranslateBubble"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="12dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_yandex_bubble"
+                app:tint="@color/stitch_text_secondary"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Open Yandex Translate floating" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bubble"
+                android:textSize="13sp"
+                android:textColor="@color/stitch_text_primary" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>
