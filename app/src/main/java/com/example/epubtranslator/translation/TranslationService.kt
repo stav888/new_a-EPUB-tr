@@ -1,6 +1,7 @@
 package com.example.epubtranslator.translation
 
 import android.util.Log
+import com.example.epubtranslator.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -21,9 +22,7 @@ class TranslationService {
     companion object {
         private const val TAG = "TranslationService"
         private const val GOOGLE_BASE_URL = "https://translate.googleapis.com/translate_a/single"
-        private const val YANDEX_BASE_URL = "https://microsoft-translator-text.p.rapidapi.com/translate"
-        private const val YANDEX_API_KEY = "bf5bfcf459mshaf65b77e8c0fe87p1f2389jsnd969703e1153"
-        private const val YANDEX_API_HOST = "microsoft-translator-text.p.rapidapi.com"
+        private const val MICROSOFT_TRANSLATOR_BASE_URL = "https://microsoft-translator-text.p.rapidapi.com/translate"
         private const val DEFAULT_SOURCE_LANGUAGE = "en" // Default source language is English
         private const val DEFAULT_TARGET_LANGUAGE = "he" // Default target language is Hebrew
 
@@ -31,6 +30,10 @@ class TranslationService {
         private val HEBREW_REGEX = Regex("[\\u0590-\\u05FF\\uFB1D-\\uFB4F]+")
         private val ENGLISH_REGEX = Regex("[a-zA-Z]+")
     }
+
+    // API credentials from BuildConfig (set in build.gradle)
+    private val rapidApiKey: String = BuildConfig.RAPIDAPI_KEY
+    private val rapidApiHost: String = BuildConfig.RAPIDAPI_HOST
 
     // Current API to use for translation
     private var currentApi: TranslationApi = TranslationApi.GOOGLE
@@ -141,9 +144,9 @@ class TranslationService {
     }
 
     /**
-     * Create a request for the Yandex Translate API
+     * Create a request for the Microsoft Translator API (via RapidAPI)
      */
-    private fun createYandexTranslateRequest(text: String, targetLanguage: String): Request {
+    private fun createMicrosoftTranslatorRequest(text: String, targetLanguage: String): Request {
         // Detect the source language
         val sourceLanguage = detectLanguage(text)
 
@@ -161,14 +164,14 @@ class TranslationService {
         val mediaType = "application/json; charset=utf-8".toMediaType()
         val requestBody = jsonBody.toString().toRequestBody(mediaType)
 
-        Log.d(TAG, "Yandex Translate: Translating from $sourceLanguage to $actualTargetLanguage")
+        Log.d(TAG, "Microsoft Translator: Translating from $sourceLanguage to $actualTargetLanguage")
 
         // Create the request
         return Request.Builder()
-            .url("$YANDEX_BASE_URL?api-version=3.0&from=$sourceLanguage&to=$actualTargetLanguage")
+            .url("$MICROSOFT_TRANSLATOR_BASE_URL?api-version=3.0&from=$sourceLanguage&to=$actualTargetLanguage")
             .post(requestBody)
-            .addHeader("X-RapidAPI-Key", YANDEX_API_KEY)
-            .addHeader("X-RapidAPI-Host", YANDEX_API_HOST)
+            .addHeader("X-RapidAPI-Key", rapidApiKey)
+            .addHeader("X-RapidAPI-Host", rapidApiHost)
             .addHeader("Content-Type", "application/json")
             .build()
     }
@@ -276,7 +279,7 @@ class TranslationService {
                 // Create the request based on the selected API
                 val request = when (currentApi) {
                     TranslationApi.GOOGLE -> createGoogleTranslateRequest(fullText, effectiveTarget)
-                    TranslationApi.YANDEX -> createYandexTranslateRequest(fullText, effectiveTarget)
+                    TranslationApi.YANDEX -> createMicrosoftTranslatorRequest(fullText, effectiveTarget)
                 }
 
                 Log.d(TAG, "Executing request to ${currentApi.name} API")
@@ -316,24 +319,18 @@ class TranslationService {
                     Log.e(TAG, "API error: ${response.code} - $errorBody")
                 }
 
-                // If we get here, something went wrong with the API call
-                // Provide fallback demo translation for testing
-                Log.w(TAG, "API call failed, providing demo translation for testing")
-                val demoTranslation = createDemoTranslation(fullText, effectiveTarget)
-                return@withContext Result.success(demoTranslation)
+                // Do not report a fake translation as success. The reader will clear
+                // the loading state and refund the reserved credit on this failure.
+                return@withContext Result.failure(
+                    IllegalStateException("Translation service returned no translation")
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Error translating text: ${e.message}")
-                // Provide fallback demo translation for network issues
-                Log.w(TAG, "Network error detected, providing demo translation")
-                val demoTranslation = createDemoTranslation(text, effectiveTarget)
-                return@withContext Result.success(demoTranslation)
+                return@withContext Result.failure(e)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error: ${e.message}")
-            // Provide fallback demo translation even for unexpected errors
-            Log.w(TAG, "Unexpected error detected, providing demo translation as fallback")
-            val demoTranslation = createDemoTranslation(text, targetLanguage ?: "en")
-            return@withContext Result.success(demoTranslation)
+            return@withContext Result.failure(e)
         }
     }
 

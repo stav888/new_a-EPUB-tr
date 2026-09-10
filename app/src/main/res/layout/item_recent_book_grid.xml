@@ -23,7 +23,7 @@
         <!-- Book Thumbnail with Stitch 3:4 aspect ratio -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="213dp">
 
             <ImageView
                 android:id="@+id/bookThumbnailImageView"

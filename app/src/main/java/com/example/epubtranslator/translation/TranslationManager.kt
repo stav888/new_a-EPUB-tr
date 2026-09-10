@@ -2,8 +2,18 @@ package com.example.epubtranslator.translation
 
 import android.content.Context
 import android.util.Log
+import com.example.epubtranslator.util.NetworkMonitor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+/**
+ * Exception thrown when offline models are not downloaded
+ */
+class ModelNotDownloadedException(
+    message: String,
+    val sourceLanguage: Language,
+    val targetLanguage: Language
+) : Exception(message)
 
 /**
  * Manager class that coordinates translation operations
@@ -15,6 +25,7 @@ class TranslationManager(private val context: Context) {
     }
 
     private val translationService = TranslationService()
+    private val mlKitService = MlKitTranslationService()
     private val languageManager = LanguageManager(context)
 
     // Shared preferences keys
@@ -75,29 +86,79 @@ class TranslationManager(private val context: Context) {
      */
     suspend fun translateText(text: String): Result<String> = withContext(Dispatchers.IO) {
         try {
-            // Get the target language from preferences
             val targetLanguage = languageManager.getTargetLanguage()
-
-            // Log the target language for debugging
             Log.d(TAG, "Preferred target language from settings: ${targetLanguage.displayName} (${targetLanguage.code})")
 
-            // Use the target language from settings
-            // The translation service will still detect the source language
-            val result = translationService.translateText(text, targetLanguage.code)
+            // Translation services can mis-detect or reject list markers as the whole
+            // paragraph. Translate the line contents and restore the markers afterward.
+            val bulletPattern = Regex("^([\\s]*[*•▪◦‣-][\\s]*)")
+            val lines = text.split("\\n")
+            val bulletPrefixes = lines.map { line -> bulletPattern.find(line)?.value ?: "" }
+            val hasBulletMarkers = bulletPrefixes.any { it.isNotEmpty() }
+            val translationInput = if (hasBulletMarkers) {
+                lines.joinToString("\\n") { line -> bulletPattern.replaceFirst(line, "").trim() }
+            } else {
+                text
+            }
 
-            // Log the result for debugging
-            result.fold(
-                onSuccess = { translatedText ->
-                    android.util.Log.d("TranslationManager", "Translation successful: ${translatedText.take(50)}...")
-                },
-                onFailure = { error ->
-                    android.util.Log.e("TranslationManager", "Translation failed: ${error.message}")
+            fun restoreBulletMarkers(translatedText: String): String {
+                if (!hasBulletMarkers) return translatedText
+                val translatedLines = translatedText.split("\\n").toMutableList()
+                return translatedLines.mapIndexed { index, line ->
+                    val prefix = bulletPrefixes.getOrNull(index).orEmpty()
+                    if (prefix.isNotEmpty()) prefix + line.trimStart() else line
+                }.joinToString("\\n")
+            }
+
+            // Check if online
+            val isOnline = NetworkMonitor.isOnline(context)
+            Log.d(TAG, "Network status: ${if (isOnline) "ONLINE" else "OFFLINE"}")
+
+            if (isOnline) {
+                // Use online translation
+                val result = translationService.translateText(translationInput, targetLanguage.code)
+                result.map { translatedText -> restoreBulletMarkers(translatedText) }.also { translatedResult ->
+                    translatedResult.fold(
+                    onSuccess = { translatedText ->
+                        Log.d("TranslationManager", "Online translation successful: ${translatedText.take(50)}...")
+                    },
+                    onFailure = { error ->
+                        Log.e("TranslationManager", "Online translation failed: ${error.message}")
+                    }
+                    )
                 }
-            )
+            } else {
+                // Try offline translation
+                Log.d(TAG, "Attempting offline translation")
+                // Detect source language from text
+                val sourceLanguageCode = translationService.detectLanguagePublic(translationInput)
+                val sourceLanguage = Language.fromCode(sourceLanguageCode)
 
-            result
+                // Check if models are downloaded
+                val modelsDownloaded = mlKitService.areModelsDownloaded(
+                    sourceLanguage.mlKitCode,
+                    targetLanguage.mlKitCode
+                )
+
+                if (!modelsDownloaded) {
+                    Log.w(TAG, "Offline models not downloaded: ${sourceLanguage.code} -> ${targetLanguage.code}")
+                    return@withContext Result.failure(
+                        ModelNotDownloadedException(
+                            "Offline translation models not downloaded. Please download models in Settings.",
+                            sourceLanguage,
+                            targetLanguage
+                        )
+                    )
+                }
+
+                mlKitService.translateText(translationInput, sourceLanguage.mlKitCode, targetLanguage.mlKitCode)
+                    .map { translatedText -> restoreBulletMarkers(translatedText) }
+            }
+        } catch (e: ModelNotDownloadedException) {
+            Log.e(TAG, "Model not downloaded: ${e.message}")
+            Result.failure(e)
         } catch (e: Exception) {
-            android.util.Log.e("TranslationManager", "Exception in translateText", e)
+            Log.e("TranslationManager", "Exception in translateText", e)
             Result.failure(e)
         }
     }
@@ -144,5 +205,38 @@ class TranslationManager(private val context: Context) {
         // For other languages, we can't easily detect
         // Just return false to allow translation
         return false
+    }
+
+    /**
+     * Download offline model for a language
+     */
+    suspend fun downloadOfflineModel(language: Language, onProgress: (Int) -> Unit = {}): Result<Unit> {
+        return mlKitService.downloadModel(language.mlKitCode, onProgress)
+    }
+
+    /**
+     * Delete offline model for a language
+     */
+    suspend fun deleteOfflineModel(language: Language): Result<Unit> {
+        return mlKitService.deleteModel(language.mlKitCode)
+    }
+
+    /**
+     * Get offline model status for all languages
+     */
+    suspend fun getOfflineModelStatus(): Map<Language, Boolean> {
+        val status = mutableMapOf<Language, Boolean>()
+        for (language in Language.values()) {
+            val isDownloaded = mlKitService.areModelsDownloaded(language.mlKitCode, "en")
+            status[language] = isDownloaded
+        }
+        return status
+    }
+
+    /**
+     * Cleanup resources
+     */
+    fun cleanup() {
+        mlKitService.close()
     }
 }

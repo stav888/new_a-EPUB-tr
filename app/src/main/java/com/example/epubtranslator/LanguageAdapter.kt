@@ -7,6 +7,7 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.epubtranslator.translation.OfflineLanguage
 
 class LanguageAdapter(
     private val languages: List<OfflineLanguage>,

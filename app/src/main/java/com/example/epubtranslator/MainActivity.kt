@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var currentViewMode = VIEW_MODE_LIST
     private var allBooks: List<RecentBook> = emptyList()
     private var filteredBooks: List<RecentBook> = emptyList()
-    private var currentFilter = "Read"
+    private var currentFilter = ""
     private var currentSearchQuery = ""
 
     // Register for activity result to handle file selection
@@ -405,17 +405,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun toggleViewMode() {
         currentViewMode = if (currentViewMode == VIEW_MODE_LIST) VIEW_MODE_GRID else VIEW_MODE_LIST
 
-        // Clear the RecyclerView's cache to prevent ViewHolder type conflicts
-        binding.recentBooksRecyclerView.recycledViewPool.clear()
+        val recyclerView = binding.recentBooksRecyclerView
+        recyclerView.stopScroll()
+        recyclerView.adapter = null
+        recyclerView.recycledViewPool.clear()
 
-        // Update the layout manager first
-        setRecyclerViewLayoutManager()
-
-        // Update the adapter with the new view mode
         recentBooksAdapter.setViewMode(currentViewMode)
-
-        // Proactively refresh the book list to avoid disappearing items
-        updateRecentBooksList()
+        setRecyclerViewLayoutManager()
+        recyclerView.adapter = recentBooksAdapter
 
         // Save the preference
         saveViewModePreference()
@@ -481,27 +478,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         })
 
-        // Set up filter chips (updated for Stitch design)
-        binding.chipRead.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                currentFilter = "Read"
-                applyFiltersAndSearch()
-            }
-        }
-
-        binding.chipCurrentlyReading.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                currentFilter = "Currently Reading"
-                applyFiltersAndSearch()
-            }
-        }
-
-        binding.chipToRead.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                currentFilter = "To Read"
-                applyFiltersAndSearch()
-            }
-        }
     }
 
     private fun applyFiltersAndSearch() {
@@ -556,7 +532,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun generateMissingThumbnailsIfNeeded(recentBooks: List<RecentBook>) {
         val booksNeedingThumbnails = recentBooks.filter { book ->
             val path = book.coverImagePath
-            path.isNullOrBlank() || (path != null && !java.io.File(path).exists())
+            path.isNullOrBlank() || (path != null && (!java.io.File(path).exists() || !path.contains("_thumb_v2.")))
         }
 
         if (booksNeedingThumbnails.isEmpty()) return
@@ -719,7 +695,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             • Font size adjustment
             • Recent books management
 
-            Translation APIs:
+            Translation Services:
             • Google Translate
             • Yandex Translate
 

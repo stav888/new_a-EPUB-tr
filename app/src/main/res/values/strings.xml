@@ -60,10 +60,19 @@
     <string name="translation_method_google_api">Google API</string>
     <string name="translation_method_yandex_api">Yandex API</string>
     <string name="translation_method_selected">Translation method: %1$s</string>
+    <string name="translation_credits">Credits: %1$d</string>
+    <string name="no_translation_credits">No translation credits remaining</string>
     <string name="offline_languages">Offline Languages</string>
     <string name="download">Download</string>
     <string name="downloaded">Downloaded</string>
     <string name="hide_bars">Hide navigation bars</string>
     <string name="show_bars">Show navigation bars</string>
+    <string name="offline_language_models">Offline Language Models</string>
+    <string name="offline_model_not_downloaded">Offline translation models are not downloaded. Please download them in Settings to use offline translation.</string>
+    <string name="download_in_progress">Downloading model...</string>
+    <string name="model_download_success">Model downloaded successfully</string>
+    <string name="model_download_failed">Failed to download model</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="translating_offline">Translating offline...</string>
 </resources>
 

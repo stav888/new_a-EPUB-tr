@@ -16,14 +16,4 @@
         android:title="Y - Yandex Translate"
         android:icon="@android:drawable/ic_menu_send" />
 
-    <item
-        android:id="@+id/translation_method_google_api"
-        android:title="G2 - Google API"
-        android:icon="@drawable/ic_google_translate" />
-
-    <item
-        android:id="@+id/translation_method_yandex_api"
-        android:title="Y2 - Yandex API"
-        android:icon="@android:drawable/ic_menu_send" />
-
 </menu>

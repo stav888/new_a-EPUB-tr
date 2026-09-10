@@ -1,0 +1,18 @@
+# API Credentials Configuration
+# ===================================================
+# This is a TEMPLATE file. Copy this to local.properties and add your actual credentials.
+# local.properties is in .gitignore and will NOT be committed to git.
+#
+# SECURITY: Never commit local.properties with real API keys to version control!
+# ===================================================
+
+# Microsoft Translator API (via RapidAPI)
+# Get your key from: https://rapidapi.com/microsoft-azure-org-microsoft-cognitive-services/api/microsoft-translator-text
+# Steps:
+# 1. Sign up on RapidAPI.com
+# 2. Subscribe to Microsoft Translator Text API (free tier available)
+# 3. Copy your API key from the credentials page
+# 4. Paste it below in local.properties
+
+RAPIDAPI_KEY=YOUR_RAPIDAPI_KEY_HERE
+RAPIDAPI_HOST=microsoft-translator-text.p.rapidapi.com

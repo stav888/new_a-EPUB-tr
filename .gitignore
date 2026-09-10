@@ -30,3 +30,16 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# Local API credentials and secrets (DO NOT COMMIT)
+local.properties
+.env
+*.key
+*.pem
+
+# Gradle and Android build output
+.gradle/
+**/build/
+captures/
+*.apk
+*.aab

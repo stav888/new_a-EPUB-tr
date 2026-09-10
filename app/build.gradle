@@ -4,8 +4,27 @@ plugins {
     // id 'kotlin-kapt' // Temporarily disabled to fix duplicate class issues
 }
 
-def versionProps = new Properties()
 def versionPropsFile = rootProject.file("version.properties")
+
+if (!project.hasProperty('disableAutoVersionBump') && versionPropsFile.exists()) {
+    def props = new Properties()
+    versionPropsFile.withInputStream { props.load(it) }
+    try {
+        props['VERSION_CODE'] = ((props['VERSION_CODE'] ?: '1').toInteger() + 1).toString()
+        props['BUILD_NUMBER'] = ((props['BUILD_NUMBER'] ?: '1').toInteger() + 1).toString()
+        if ((props['BUILD_TYPE'] ?: 'beta') != 'release') {
+            props['BETA_BUILD'] = ((props['BETA_BUILD'] ?: '1').toInteger() + 1).toString()
+        }
+        versionPropsFile.withOutputStream { out ->
+            props.store(out, "Auto-bumped on ${new Date()}")
+        }
+        println "[bumpVersion] Bumped VERSION_CODE to ${props['VERSION_CODE']} (build ${props['BUILD_NUMBER']})"
+    } catch (Exception e) {
+        println "[bumpVersion] Failed to bump version: ${e.message}"
+    }
+}
+
+def versionProps = new Properties()
 if (versionPropsFile.exists()) {
     versionProps.load(new FileInputStream(versionPropsFile))
 }
@@ -18,6 +37,11 @@ def buildNumber = versionProps['BUILD_NUMBER'] ?: '1'
 // Simple versioning - always use MAJOR.MINOR.PATCH build BUILD_NUMBER format
 def computedVersionName = "${major}.${minor}.${patch} build ${buildNumber}"
 def computedVersionCode = (versionProps['VERSION_CODE'] ?: '44').toInteger()
+
+// API credentials - Replace with your actual RapidAPI key
+// DO NOT commit real API keys! Set in local.properties or environment variable instead
+def rapidApiKey = System.getenv('RAPIDAPI_KEY') ?: 'MISSING_API_KEY_SET_ENVIRONMENT_VARIABLE'
+def rapidApiHost = 'microsoft-translator-text.p.rapidapi.com'
 
 android {
     namespace "com.example.epubtranslator"
@@ -34,10 +58,14 @@ android {
         debug {
             debuggable true
             minifyEnabled false
+            buildConfigField "String", "RAPIDAPI_KEY", "\"${rapidApiKey}\""
+            buildConfigField "String", "RAPIDAPI_HOST", "\"${rapidApiHost}\""
         }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "RAPIDAPI_KEY", "\"${rapidApiKey}\""
+            buildConfigField "String", "RAPIDAPI_HOST", "\"${rapidApiHost}\""
         }
     }
     compileOptions {
@@ -65,42 +93,17 @@ android {
     }
 }
 
-// Auto-bump version before each build (except release keeps beta build untouched)
-if (!project.hasProperty('disableAutoVersionBump')) {
-    tasks.register('bumpVersion') {
-        doLast {
-            def propsFile = rootProject.file('version.properties')
-            if (!propsFile.exists()) {
-                println "version.properties not found, skipping bump"
-                return
-            }
-            def p = new Properties()
-            propsFile.withInputStream { p.load(it) }
-            try {
-                def currentCode = (p['VERSION_CODE'] ?: '1').toInteger()
-                def newCode = currentCode + 1
-                p['VERSION_CODE'] = newCode.toString()
-
-                // Increment BUILD_NUMBER for each build
-                def currentBuildNumber = (p['BUILD_NUMBER'] ?: '1').toInteger()
-                def newBuildNumber = currentBuildNumber + 1
-                p['BUILD_NUMBER'] = newBuildNumber.toString()
-
-                if ((p['BUILD_TYPE'] ?: 'beta') != 'release') {
-                    def beta = (p['BETA_BUILD'] ?: '1').toInteger() + 1
-                    p['BETA_BUILD'] = beta.toString()
-                }
-                propsFile.withOutputStream { out ->
-                    p.store(out, "Auto-bumped on ${new Date()}")
-                }
-                println "[bumpVersion] Bumped VERSION_CODE to ${p['VERSION_CODE']} (build ${p['BUILD_NUMBER']})"
-            } catch (Exception e) {
-                println "[bumpVersion] Failed to bump version: ${e.message}"
-            }
-        }
-    }
-    tasks.matching { it.name == 'preBuild' }.configureEach { dependsOn('bumpVersion') }
-}
+// NOTE: API Keys Configuration
+// ============================================
+// The RAPIDAPI_KEY and RAPIDAPI_HOST below are SECURITY SENSITIVE
+// DO NOT commit real API keys to version control!
+//
+// To add your API keys:
+// 1. Get your API key from RapidAPI (https://rapidapi.com/microsoft-azure-org-microsoft-cognitive-services/api/microsoft-translator-text)
+// 2. Replace "your-api-key-here" with your actual RapidAPI key in buildTypes below
+// 3. DO NOT commit this file with real keys
+// 4. If keys are exposed, regenerate them immediately on RapidAPI dashboard
+// ============================================
 
 dependencies {
     // Core Android dependencies
@@ -122,8 +125,12 @@ dependencies {
 
     // Coroutines for asynchronous programming
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
+
+    // ML Kit for on-device translation
+    implementation 'com.google.mlkit:translate:17.0.2'
 
     // Room Database for annotations - temporarily removed
     // implementation 'androidx.room:room-runtime:2.6.1'

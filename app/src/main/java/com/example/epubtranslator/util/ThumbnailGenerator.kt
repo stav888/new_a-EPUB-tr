@@ -14,6 +14,7 @@ import org.jsoup.Jsoup
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.net.URLDecoder
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
@@ -36,7 +37,7 @@ class ThumbnailGenerator(private val context: Context) {
                 return@withContext null
             }
             val thumbnailsDir = File(context.filesDir, THUMBNAILS_DIR).apply { mkdirs() }
-            val thumbnailFileName = "${file.nameWithoutExtension}_thumb.jpg"
+            val thumbnailFileName = "${file.nameWithoutExtension}_thumb_v2.jpg"
             val thumbnailFile = File(thumbnailsDir, thumbnailFileName)
 
             val needRegeneration = if (thumbnailFile.exists() && thumbnailFile.length() > 0) {
@@ -96,7 +97,7 @@ class ThumbnailGenerator(private val context: Context) {
 
             var coverHref: String? = null
             if (!coverId.isNullOrBlank()) {
-                coverHref = opfDoc.select("manifest item[id=$coverId]").firstOrNull()?.attr("href")
+                coverHref = opfDoc.select("manifest item").firstOrNull { it.attr("id") == coverId }?.attr("href")
             }
             // Strategy 3: any manifest item id or href containing 'cover' and image media-type
             if (coverHref.isNullOrBlank()) {
@@ -109,11 +110,17 @@ class ThumbnailGenerator(private val context: Context) {
                 coverHref = candidate?.attr("href")
             }
             if (coverHref.isNullOrBlank()) {
+                coverHref = opfDoc.select("manifest item").firstOrNull { it.attr("media-type").lowercase().startsWith("image/") }?.attr("href")
+            }
+            if (coverHref.isNullOrBlank()) {
                 Log.w(TAG, "No cover href found in OPF; falling back")
                 return null
             }
-            val normalizedPath = if (opfDir.isNotEmpty()) "$opfDir/$coverHref" else coverHref
-            val coverEntry: ZipEntry = zipFile.getEntry(normalizedPath) ?: run {
+            val decodedHref = URLDecoder.decode(coverHref, "UTF-8").replace('\\', '/').trimStart('/')
+            val normalizedPath = normalizeZipPath(if (opfDir.isNotEmpty()) "$opfDir/$decodedHref" else decodedHref)
+            val coverEntry: ZipEntry = zipFile.entries().asSequence().firstOrNull {
+                normalizeZipPath(it.name) == normalizedPath
+            } ?: run {
                 Log.w(TAG, "Cover image entry $normalizedPath not found in zip")
                 return null
             }
@@ -130,6 +137,18 @@ class ThumbnailGenerator(private val context: Context) {
         } finally {
             try { zipFile?.close() } catch (_: Exception) {}
         }
+    }
+
+    private fun normalizeZipPath(path: String): String {
+        val parts = ArrayDeque<String>()
+        path.split('/').forEach { part ->
+            when (part) {
+                "", "." -> Unit
+                ".." -> if (parts.isNotEmpty()) parts.removeLast()
+                else -> parts.addLast(part)
+            }
+        }
+        return parts.joinToString("/")
     }
 
     private fun scaleAndLetterbox(source: Bitmap): Bitmap {

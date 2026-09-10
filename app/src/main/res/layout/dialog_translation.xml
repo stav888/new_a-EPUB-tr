@@ -83,13 +83,28 @@
             android:textSize="12sp"
             android:textStyle="italic" />
 
-        <Button
-            android:id="@+id/closeButton"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
+            android:orientation="horizontal"
             android:layout_marginTop="8dp"
-            android:text="@string/cancel" />
+            android:gravity="end">
+
+            <Button
+                android:id="@+id/openSettingsButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/open_settings"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/closeButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cancel" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

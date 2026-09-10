@@ -3,20 +3,20 @@ package com.example.epubtranslator.translation
 /**
  * Enum class representing supported languages for translation
  */
-enum class Language(val code: String, val displayName: String) {
-    ENGLISH("en", "English"),
-    SPANISH("es", "Spanish"),
-    FRENCH("fr", "French"),
-    GERMAN("de", "German"),
-    ITALIAN("it", "Italian"),
-    PORTUGUESE("pt", "Portuguese"),
-    RUSSIAN("ru", "Russian"),
-    CHINESE("zh", "Chinese"),
-    JAPANESE("ja", "Japanese"),
-    KOREAN("ko", "Korean"),
-    ARABIC("ar", "Arabic"),
-    HEBREW("he", "Hebrew"),
-    HINDI("hi", "Hindi");
+enum class Language(val code: String, val displayName: String, val mlKitCode: String) {
+    ENGLISH("en", "English", "en"),
+    SPANISH("es", "Spanish", "es"),
+    FRENCH("fr", "French", "fr"),
+    GERMAN("de", "German", "de"),
+    ITALIAN("it", "Italian", "it"),
+    PORTUGUESE("pt", "Portuguese", "pt"),
+    RUSSIAN("ru", "Russian", "ru"),
+    CHINESE("zh", "Chinese", "zh"),
+    JAPANESE("ja", "Japanese", "ja"),
+    KOREAN("ko", "Korean", "ko"),
+    ARABIC("ar", "Arabic", "ar"),
+    HEBREW("he", "Hebrew", "he"),
+    HINDI("hi", "Hindi", "hi");
 
     companion object {
         fun fromCode(code: String): Language {

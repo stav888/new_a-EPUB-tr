@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/stitch_background_light"
     tools:context=".EpubReaderActivity">
 
     <!-- Stitch-inspired Header with Inline Search -->
@@ -23,11 +24,11 @@
             android:id="@+id/mainToolbarRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="64dp"
+            android:minHeight="56dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingHorizontal="8dp"
-            android:paddingVertical="12dp">
+            android:paddingVertical="8dp">
 
             <!-- Left side: TOC Button and Translation Method -->
             <LinearLayout
@@ -38,24 +39,24 @@
 
                 <ImageButton
                     android:id="@+id/tocButton"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:background="@drawable/stitch_round_button"
                     android:src="@drawable/ic_toc"
                     android:contentDescription="Table of Contents"
                     android:scaleType="centerInside"
-                    android:padding="8dp"
+                    android:padding="7dp"
                     app:tint="@color/stitch_text_secondary" />
 
                 <!-- Translation Method Dropdown -->
                 <LinearLayout
                     android:id="@+id/translationMethodContainer"
                     android:layout_width="wrap_content"
-                    android:layout_height="38dp"
+                    android:layout_height="34dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     android:background="@drawable/stitch_round_button"
-                    android:paddingHorizontal="8dp"
+                    android:paddingHorizontal="7dp"
                     android:layout_marginStart="4dp"
                     android:clickable="true"
                     android:focusable="true">
@@ -78,6 +79,18 @@
 
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/creditsTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:gravity="center"
+                    android:text="100"
+                    android:textColor="@color/stitch_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="Translation credits" />
+
             </LinearLayout>
 
             <!-- Center: Flexible space (title moved below) -->
@@ -95,37 +108,37 @@
 
                 <ImageButton
                     android:id="@+id/searchButton"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:background="@drawable/stitch_round_button"
                     android:src="@drawable/ic_search"
                     android:contentDescription="Search in Book"
                     android:scaleType="centerInside"
-                    android:padding="8dp"
+                    android:padding="7dp"
                     android:layout_marginEnd="4dp"
                     app:tint="@color/stitch_text_secondary" />
 
                 <ImageButton
                     android:id="@+id/themeToggleButton"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:background="@drawable/stitch_round_button"
                     android:src="@drawable/ic_light_mode"
                     android:contentDescription="Toggle dark/light mode"
                     android:scaleType="centerInside"
-                    android:padding="8dp"
+                    android:padding="7dp"
                     android:layout_marginEnd="4dp"
                     app:tint="@color/stitch_text_secondary" />
 
                 <ImageButton
                     android:id="@+id/fontSizeDecreaseButton"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:background="@drawable/stitch_round_button"
                     android:src="@drawable/ic_font_size_decrease"
                     android:contentDescription="Decrease font size"
                     android:scaleType="centerInside"
-                    android:padding="8dp"
+                    android:padding="7dp"
                     android:layout_marginEnd="2dp"
                     app:tint="@color/stitch_text_secondary" />
 
@@ -143,24 +156,24 @@
 
                 <ImageButton
                     android:id="@+id/fontSizeIncreaseButton"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:background="@drawable/stitch_round_button"
                     android:src="@drawable/ic_font_size_increase"
                     android:contentDescription="Increase font size"
                     android:scaleType="centerInside"
-                    android:padding="8dp"
+                    android:padding="7dp"
                     app:tint="@color/stitch_text_secondary" />
 
                 <ImageButton
                     android:id="@+id/settingsButton"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:background="@drawable/stitch_round_button"
                     android:src="@android:drawable/ic_menu_manage"
                     android:contentDescription="Reader settings"
                     android:scaleType="centerInside"
-                    android:padding="8dp"
+                    android:padding="7dp"
                     android:layout_marginStart="6dp"
                     app:tint="@color/stitch_text_secondary" />
 
@@ -176,8 +189,8 @@
             android:textSize="12sp"
             android:textColor="@color/stitch_text_secondary"
             android:gravity="center"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="4dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp"
             android:maxLines="1"
             android:ellipsize="end" />
 
@@ -367,6 +380,19 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
+            <!-- Undo stays outside the reordered center navigation row. -->
+            <ImageButton
+                android:id="@+id/undoNavigationButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/stitch_round_button"
+                android:src="@android:drawable/ic_menu_revert"
+                android:contentDescription="Go back to previous location"
+                android:layout_marginEnd="8dp"
+                android:scaleType="centerInside"
+                android:padding="8dp"
+                app:tint="@color/stitch_text_secondary" />
+
             <!-- Spacer to push navigation buttons to center -->
             <View
                 android:layout_width="0dp"
@@ -434,14 +460,16 @@
             <!-- Reading Progress Percentage (Right Side) -->
             <TextView
                 android:id="@+id/readingProgressTextView"
-                android:layout_width="0dp"
+                android:layout_width="64dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="0%"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@color/stitch_text_secondary"
-                android:gravity="end"
+                android:gravity="center"
+                android:singleLine="true"
+                android:includeFontPadding="false"
+                android:minWidth="64dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="8dp" />
 

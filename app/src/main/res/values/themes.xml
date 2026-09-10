@@ -67,6 +67,20 @@
 
     <style name="Theme.EPUBTranslator.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Light" />
 
+    <style name="ThemeOverlay.EPUBTranslator.TocDialog.Light" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorSurface">@color/md_theme_light_surface</item>
+        <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
+        <item name="android:colorBackground">@color/md_theme_light_background</item>
+        <item name="colorOnBackground">@color/md_theme_light_onBackground</item>
+    </style>
+
+    <style name="ThemeOverlay.EPUBTranslator.TocDialog.Dark" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorSurface">@color/md_theme_dark_surface</item>
+        <item name="colorOnSurface">@color/md_theme_dark_onSurface</item>
+        <item name="android:colorBackground">@color/md_theme_dark_background</item>
+        <item name="colorOnBackground">@color/md_theme_dark_onBackground</item>
+    </style>
+
     <!-- Stitch-Inspired Typography Styles -->
     <style name="StitchTextAppearance.Headline1" parent="TextAppearance.MaterialComponents.Headline1">
         <item name="fontFamily">sans-serif-medium</item>

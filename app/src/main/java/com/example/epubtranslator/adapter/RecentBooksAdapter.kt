@@ -194,9 +194,9 @@ class RecentBooksAdapter(
             .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC) // Enable smart disk caching
             .skipMemoryCache(false) // Enable memory cache for better performance
 
-        // Use fitCenter for better aspect ratio preservation, centerCrop for grid view
+        // Preserve the full cover in both layouts instead of cropping grid covers.
         val requestOptions = if (isGrid) {
-            base.centerCrop()
+            base.fitCenter()
         } else {
             base.fitCenter()
         }

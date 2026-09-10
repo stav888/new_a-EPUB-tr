@@ -11,11 +11,13 @@ import android.os.Looper
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.webkit.JavascriptInterface
 import android.widget.LinearLayout
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -44,6 +46,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import org.jsoup.parser.Parser
 
 class EpubReaderActivity : AppCompatActivity() {
 
@@ -68,6 +71,7 @@ class EpubReaderActivity : AppCompatActivity() {
 
     // Map of spine file paths to human-friendly chapter titles parsed from EPUB TOC (preserve insertion order)
     private val tocTitleMap: LinkedHashMap<String, String> = LinkedHashMap()
+    private val tocTargetMap: LinkedHashMap<String, String> = LinkedHashMap()
 
     // Reading preferences
     private var currentFontSize = 100 // Default font size percentage
@@ -82,10 +86,20 @@ class EpubReaderActivity : AppCompatActivity() {
     // Inline search state
     private var currentSearchIndex = 0
     private var totalSearchResults = 0
+    private data class ReaderLocation(val pageIndex: Int, val scrollY: Int)
+    private val navigationHistory = ArrayDeque<ReaderLocation>()
+    private var restoringNavigationHistory = false
+    private var pendingAnchor: String? = null
+    private var pendingScrollPosition: Int? = null
+    private var creditsCodeDialogShown = false
 
     // Translation synchronization to prevent race conditions
     private val translationLock = Any()
     private val pendingTranslations = mutableSetOf<String>()
+    private val creditsPreferences by lazy {
+        getSharedPreferences("translation_credits", Context.MODE_PRIVATE)
+    }
+    private var translationCredits = 100
 
     // Activity Result Launcher for search
     private val searchActivityLauncher = registerForActivityResult(
@@ -112,11 +126,17 @@ class EpubReaderActivity : AppCompatActivity() {
     }
 
     // Activity Result Launcher for translation
+    private var pendingExternalTranslationParagraphId: String? = null
+
     private val translationLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            result.data?.let { intent ->
+        val returnedParagraphId = result.data?.getStringExtra("paragraph_id")
+            ?: pendingExternalTranslationParagraphId
+        var translationSucceeded = false
+        try {
+            if (result.resultCode == RESULT_OK) {
+                result.data?.let { intent ->
                 val translatedText = intent.getStringExtra(Intent.EXTRA_PROCESS_TEXT)
                 val originalText = intent.getStringExtra("original_text")
                 val paragraphId = intent.getStringExtra("paragraph_id")
@@ -149,6 +169,7 @@ class EpubReaderActivity : AppCompatActivity() {
 
                             // Use toggleTranslationVisibility for consistent behavior with all methods
                             toggleTranslationVisibility(paragraphId, true)
+                            translationSucceeded = true
 
                             Toast.makeText(this, "Translation received from external app", Toast.LENGTH_SHORT).show()
                         } else {
@@ -160,6 +181,15 @@ class EpubReaderActivity : AppCompatActivity() {
                     }
                 }
             }
+            }
+        } finally {
+            returnedParagraphId?.let { paragraphId ->
+                pendingTranslations.remove(paragraphId)
+                resetElementState(paragraphId, refundCredit = !translationSucceeded)
+            }
+            if (pendingExternalTranslationParagraphId == returnedParagraphId) {
+                pendingExternalTranslationParagraphId = null
+            }
         }
     }
 
@@ -167,6 +197,9 @@ class EpubReaderActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityEpubReaderBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        translationCredits = creditsPreferences.getInt("remaining", 100)
+        updateCreditsDisplay()
 
         // Restore bars visibility from savedInstanceState or default to true
         barsVisible = savedInstanceState?.getBoolean("barsVisible", true) ?: true
@@ -532,20 +565,20 @@ class EpubReaderActivity : AppCompatActivity() {
             val spineOrderPaths = parseEpubSpine(zipFile, allEntriesList)
 
             // Build ordered list of HTML entries
-            val entryByName = htmlFiles.associateBy { it.name }
+            val entryByName = htmlFiles.associateBy { normalizeEpubPath(it.name) }
             val orderedEntries = mutableListOf<ZipEntry>()
             val added = mutableSetOf<String>()
 
             if (spineOrderPaths.isNotEmpty()) {
                 for (path in spineOrderPaths) {
-                    val entry = entryByName[path]
+                    val entry = entryByName[normalizeEpubPath(path)]
                     if (entry != null) {
                         orderedEntries.add(entry)
-                        added.add(entry.name)
+                        added.add(normalizeEpubPath(entry.name))
                     }
                 }
                 // Append any remaining HTML files that weren't in the spine (front/back matter)
-                htmlFiles.filter { it.name !in added }.sortedBy { it.name }.forEach { orderedEntries.add(it) }
+                htmlFiles.filter { normalizeEpubPath(it.name) !in added }.sortedBy { it.name }.forEach { orderedEntries.add(it) }
                 Log.d(TAG, "Using spine-defined reading order with ${orderedEntries.size} items")
             } else {
                 // Fallback: alphabetical order
@@ -860,21 +893,23 @@ class EpubReaderActivity : AppCompatActivity() {
         try {
             barsVisible = false
 
-            // Animate toolbar sliding up and out
+            // Fade the bars while they keep their layout space, avoiding a black gap.
             binding.toolbarLayout.animate()
-                .translationY(-binding.toolbarLayout.height.toFloat())
+                .alpha(0f)
                 .setDuration(300)
                 .withEndAction {
                     binding.toolbarLayout.visibility = View.GONE
+                    binding.toolbarLayout.alpha = 1f
                 }
                 .start()
 
-            // Animate navigation bar sliding down and out
+            // Fade the bottom bar without translating it through the WebView area.
             binding.navigationLayout.animate()
-                .translationY(binding.navigationLayout.height.toFloat())
+                .alpha(0f)
                 .setDuration(300)
                 .withEndAction {
                     binding.navigationLayout.visibility = View.GONE
+                    binding.navigationLayout.alpha = 1f
                     // Show the floating action button
                     binding.showBarButton.visibility = View.VISIBLE
                     binding.showBarButton.alpha = 0f
@@ -907,19 +942,20 @@ class EpubReaderActivity : AppCompatActivity() {
                 }
                 .start()
 
-            // Show and animate toolbar sliding down
+            // Restore layout space before fading the bars back in.
             binding.toolbarLayout.visibility = View.VISIBLE
-            binding.toolbarLayout.translationY = -binding.toolbarLayout.height.toFloat()
+            binding.toolbarLayout.translationY = 0f
+            binding.toolbarLayout.alpha = 0f
             binding.toolbarLayout.animate()
-                .translationY(0f)
+                .alpha(1f)
                 .setDuration(300)
                 .start()
 
-            // Show and animate navigation bar sliding up
             binding.navigationLayout.visibility = View.VISIBLE
-            binding.navigationLayout.translationY = binding.navigationLayout.height.toFloat()
+            binding.navigationLayout.translationY = 0f
+            binding.navigationLayout.alpha = 0f
             binding.navigationLayout.animate()
-                .translationY(0f)
+                .alpha(1f)
                 .setDuration(300)
                 .start()
 
@@ -927,6 +963,21 @@ class EpubReaderActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "Error showing bars", e)
         }
+    }
+
+    private fun toggleBars() {
+        if (barsVisible) {
+            hideBars()
+        } else {
+            showBars()
+        }
+    }
+
+    private fun clearWebViewSelection() {
+        binding.webView.evaluateJavascript(
+            "window.getSelection && window.getSelection().removeAllRanges();",
+            null
+        )
     }
 
     /**
@@ -938,12 +989,16 @@ class EpubReaderActivity : AppCompatActivity() {
             if (visible) {
                 binding.toolbarLayout.visibility = View.VISIBLE
                 binding.toolbarLayout.translationY = 0f
+                binding.toolbarLayout.alpha = 1f
                 binding.navigationLayout.visibility = View.VISIBLE
                 binding.navigationLayout.translationY = 0f
+                binding.navigationLayout.alpha = 1f
                 binding.showBarButton.visibility = View.GONE
             } else {
                 binding.toolbarLayout.visibility = View.GONE
+                binding.toolbarLayout.alpha = 1f
                 binding.navigationLayout.visibility = View.GONE
+                binding.navigationLayout.alpha = 1f
                 binding.showBarButton.visibility = View.VISIBLE
             }
             Log.d(TAG, "Bars visibility set to: $visible")
@@ -1040,6 +1095,15 @@ class EpubReaderActivity : AppCompatActivity() {
     private fun setupPageNavigation() {
         try {
             Log.d(TAG, "Setting up page navigation controls")
+
+            binding.undoNavigationButton.setOnClickListener {
+                if (navigationHistory.isNotEmpty()) {
+                    val previousLocation = navigationHistory.removeLast()
+                    restoringNavigationHistory = true
+                    pageScrollPositions[previousLocation.pageIndex] = previousLocation.scrollY
+                    loadPage(previousLocation.pageIndex)
+                }
+            }
 
             // Page navigation slider
             binding.pageNavigationSlider.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
@@ -1190,6 +1254,8 @@ class EpubReaderActivity : AppCompatActivity() {
             binding.previousPageButton.alpha = if (canGoBack) 1.0f else 0.5f
             binding.nextPageButton.alpha = if (canGoForward) 1.0f else 0.5f
             binding.lastPageButton.alpha = if (canGoForward) 1.0f else 0.5f
+            binding.undoNavigationButton.isEnabled = navigationHistory.isNotEmpty()
+            binding.undoNavigationButton.alpha = if (navigationHistory.isNotEmpty()) 1.0f else 0.5f
 
             Log.d(TAG, "Navigation controls updated successfully")
 
@@ -1390,37 +1456,51 @@ class EpubReaderActivity : AppCompatActivity() {
             Log.d(TAG, "🔧 TOC Fix: Updated totalPages to $totalPages")
         }
 
-        // Generate TOC items with chapter titles
+        // Build entries from the actual nav.xhtml/NCX hrefs instead of assuming
+        // that every spine page is a TOC item in the same order.
         val tocItems = mutableListOf<String>()
-        val actualPageCount = maxOf(totalPages, htmlFiles.size) // Use the larger value to ensure all pages are included
-
-        Log.d(TAG, "🔍 TOC Debug: Using actualPageCount = $actualPageCount")
-
-        for (i in 0 until actualPageCount) {
-            val pageNumber = i + 1
-
-            // Extract chapter title from HTML content
-            val chapterTitle = if (i < htmlFiles.size) {
-                val fileName = if (i < htmlFileNames.size) htmlFileNames[i] else "unknown"
-                extractChapterTitle(htmlFiles[i], i, fileName)
-            } else {
-                Log.w(TAG, "⚠️ TOC Warning: No HTML content for page $pageNumber")
-                "Page $pageNumber (Missing Content)"
+        val tocTargets = mutableListOf<Pair<Int, String?>>()
+        val tocSource: List<Pair<String, String>> = if (tocTitleMap.isNotEmpty()) {
+            tocTitleMap.entries.map { it.key to it.value }
+        } else {
+            htmlFileNames.mapIndexed { index, fileName ->
+                fileName to extractChapterTitle(htmlFiles[index], index, fileName)
             }
-
-            tocItems.add(chapterTitle)
-            Log.d(TAG, "🔍 TOC Debug: Page $pageNumber -> '$chapterTitle'")
         }
+
+        for ((targetPath, title) in tocSource) {
+            val normalizedTarget = normalizeEpubPath(targetPath)
+            val exactIndex = htmlFileNames.indexOfFirst { normalizeEpubPath(it) == normalizedTarget }
+            val targetIndex = if (exactIndex >= 0) exactIndex else {
+                val targetName = normalizedTarget.substringAfterLast('/')
+                val matches = htmlFileNames.mapIndexedNotNull { index, fileName ->
+                    if (normalizeEpubPath(fileName).substringAfterLast('/') == targetName) index else null
+                }
+                matches.singleOrNull() ?: -1
+            }
+            if (targetIndex >= 0) {
+                tocItems.add(title)
+                tocTargets.add(targetIndex to tocTargetMap[targetPath])
+                Log.d(TAG, "🔍 TOC Debug: '$title' -> page ${targetIndex + 1}, href=${tocTargetMap[targetPath]}")
+            } else {
+                Log.w(TAG, "TOC target not found in spine: $targetPath")
+            }
+        }
+
+        val actualPageCount = tocItems.size
 
         Log.d(TAG, "🔍 TOC Debug: Generated ${tocItems.size} TOC items")
 
-        // Create and show dialog with theme support
-        // Use device theme instead of forcing dark/light
-        val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+        val dialogContext = android.view.ContextThemeWrapper(
+            this,
+            if (isDarkMode) R.style.ThemeOverlay_EPUBTranslator_TocDialog_Dark
+            else R.style.ThemeOverlay_EPUBTranslator_TocDialog_Light
+        )
+        val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(dialogContext)
         builder.setTitle("Table of Contents ($actualPageCount pages)")
 
         val adapter = object : android.widget.ArrayAdapter<String>(
-            this,
+            dialogContext,
             android.R.layout.simple_list_item_1,
             tocItems
         ) {
@@ -1432,7 +1512,8 @@ class EpubReaderActivity : AppCompatActivity() {
                 val theme = context.theme
 
                 // Light blue highlight for current chapter/page
-                if (position == currentPage) {
+                val tocTargetPage = tocTargets.getOrNull(position)?.first
+                if (tocTargetPage == currentPage) {
                     // Use theme-aware highlight color (fallback to a subtle blue)
                     var accent = 0xFF448AFF.toInt() // default Blue A200
                     try {
@@ -1446,10 +1527,12 @@ class EpubReaderActivity : AppCompatActivity() {
                     view.setBackgroundColor(Color.TRANSPARENT)
                 }
 
-                // Force high-contrast text color for reliability
+                // Resolve the row text from the active Material theme.
                 val tv = view.findViewById<android.widget.TextView>(android.R.id.text1)
                 if (tv != null) {
-                    tv.setTextColor(if (isDarkMode) Color.WHITE else Color.BLACK)
+                    val textColors = dialogContext.obtainStyledAttributes(intArrayOf(com.google.android.material.R.attr.colorOnSurface))
+                    tv.setTextColor(textColors.getColor(0, Color.BLACK))
+                    textColors.recycle()
                 }
                 return view
             }
@@ -1460,7 +1543,20 @@ class EpubReaderActivity : AppCompatActivity() {
 
             // Navigate to selected page
             if (which < actualPageCount) {
-                loadPage(which)
+                val target = tocTargets.getOrNull(which)
+                if (target != null) {
+                    navigationHistory.addLast(ReaderLocation(currentPage, binding.webView.scrollY))
+                    restoringNavigationHistory = true
+                    pendingAnchor = null
+                    pageScrollPositions.remove(target.first)
+                    loadPage(target.first, scrollPositionOverride = 0)
+                } else {
+                    navigationHistory.addLast(ReaderLocation(currentPage, binding.webView.scrollY))
+                    restoringNavigationHistory = true
+                    pendingAnchor = null
+                    pageScrollPositions.remove(which)
+                    loadPage(which, scrollPositionOverride = 0)
+                }
                 Toast.makeText(this, "Navigated to: ${tocItems[which]}", Toast.LENGTH_SHORT).show()
             } else {
                 Log.e(TAG, "❌ TOC Error: Invalid page selection: $which")
@@ -1592,6 +1688,14 @@ class EpubReaderActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
                 val query = s?.toString() ?: ""
+                if (query == "101190") {
+                    if (!creditsCodeDialogShown) {
+                        creditsCodeDialogShown = true
+                        showCreditsUpdateDialog()
+                    }
+                    return
+                }
+                creditsCodeDialogShown = false
                 performInlineSearch(query)
             }
         })
@@ -1606,6 +1710,36 @@ class EpubReaderActivity : AppCompatActivity() {
                 false
             }
         }
+    }
+
+    private fun showCreditsUpdateDialog() {
+        val input = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            hint = "Credits"
+            setText(translationCredits.toString())
+            selectAll()
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Update translation credits")
+            .setView(input)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton("Update") { _, _ ->
+                val updatedCredits = input.text.toString().toIntOrNull()
+                if (updatedCredits != null && updatedCredits >= 0) {
+                    translationCredits = updatedCredits
+                    creditsPreferences.edit().putInt("remaining", translationCredits).apply()
+                    updateCreditsDisplay()
+                    Toast.makeText(this, getString(R.string.translation_credits, translationCredits), Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Enter a valid credit number", Toast.LENGTH_SHORT).show()
+                }
+                binding.inlineSearchEditText.text?.clear()
+            }
+            .setOnDismissListener {
+                creditsCodeDialogShown = false
+            }
+            .show()
     }
 
     /**
@@ -1743,27 +1877,10 @@ class EpubReaderActivity : AppCompatActivity() {
      * Show inline search results preview
      */
     private fun showInlineSearchResults(query: String, resultCount: Int) {
-        // For now, show a simple preview
-        // In a full implementation, you would extract actual text snippets
-        binding.searchResultsPreview.visibility = View.VISIBLE
-
-        // Create simple search result items
-        val searchResults = mutableListOf<SearchResultItem>()
-        val maxPreviewResults = minOf(4, resultCount)
-
-        for (i in 1..maxPreviewResults) {
-            searchResults.add(
-                SearchResultItem(
-                    text = "Search result $i containing \"$query\"",
-                    location = "Page ${currentPage + 1}",
-                    resultIndex = i
-                )
-            )
-        }
-
-        // Set up RecyclerView adapter (simplified for now)
-        // In a full implementation, you would use a proper adapter
-        Log.d(TAG, "Showing $maxPreviewResults search results for query: $query")
+        // Search navigation already uses the WebView match count and controls.
+        // Keep the unused placeholder preview collapsed so it cannot reserve space.
+        binding.searchResultsPreview.visibility = View.GONE
+        Log.d(TAG, "Search preview disabled; found $resultCount matches for '$query'")
     }
 
     data class SearchResultItem(
@@ -2114,6 +2231,7 @@ class EpubReaderActivity : AppCompatActivity() {
             // Parse TOC titles (nav.xhtml or toc.ncx) and build a map from href->title
             try {
                 tocTitleMap.clear()
+                tocTargetMap.clear()
                 tocTitleMap.putAll(parseTocTitleMapFromOpf(opfContent, allEntries, zipFile, opfPath))
                 Log.d(TAG, "Parsed ${'$'}{tocTitleMap.size} TOC titles from EPUB")
             } catch (e: Exception) {
@@ -2164,67 +2282,20 @@ class EpubReaderActivity : AppCompatActivity() {
      */
     private fun parseSpineFromOpf(opfContent: String, opfPath: String): List<String> {
         try {
-            val spineItems = mutableListOf<String>()
-
-            // First, extract all manifest items to map idref to href
-            val manifestMap = mutableMapOf<String, String>()
-
-            // Try multiple patterns for manifest items
-            val manifestPatterns = listOf(
-                "<item[^>]+id=\"([^\"]+)\"[^>]+href=\"([^\"]+)\"[^>]*>".toRegex(),
-                "<item[^>]+href=\"([^\"]+)\"[^>]+id=\"([^\"]+)\"[^>]*>".toRegex()
-            )
-
-            for (pattern in manifestPatterns) {
-                val matches = pattern.findAll(opfContent)
-                for (match in matches) {
-                    val (first, second) = match.groupValues[1] to match.groupValues[2]
-                    // Determine which is id and which is href based on pattern
-                    if (pattern.pattern.contains("id.*href")) {
-                        manifestMap[first] = second // id, href
-                    } else {
-                        manifestMap[second] = first // href, id
-                    }
-                }
+            val doc = Jsoup.parse(opfContent, "", Parser.xmlParser())
+            val manifestMap = doc.select("manifest item").associate { item ->
+                item.attr("id") to item.attr("href")
             }
-
-            Log.d(TAG, "Found ${manifestMap.size} manifest items")
-
-            // Then, extract spine itemrefs in order
-            val spinePatterns = listOf(
-                "<itemref[^>]+idref=\"([^\"]+)\"[^>]*>".toRegex(),
-                "<itemref[^>]*idref=\"([^\"]+)\"[^>]*>".toRegex()
-            )
-
-            val allSpineMatches = mutableListOf<MatchResult>()
-            for (pattern in spinePatterns) {
-                val matches = pattern.findAll(opfContent)
-                allSpineMatches.addAll(matches)
-                if (matches.count() > 0) break // Use first pattern that finds matches
-            }
-
-            // Get the directory of the OPF file to resolve relative paths
-            val opfDir = if (opfPath.contains("/")) {
-                opfPath.substring(0, opfPath.lastIndexOf("/") + 1)
-            } else {
-                ""
-            }
-
-            for (match in allSpineMatches) {
-                val idref = match.groupValues[1]
+            val spineItems = doc.select("spine itemref").mapNotNull { itemref ->
+                val idref = itemref.attr("idref")
                 val href = manifestMap[idref]
-                if (href != null) {
-                    // Resolve the path relative to the OPF file location
-                    val fullPath = if (opfDir.isNotEmpty()) {
-                        opfDir + href
-                    } else {
-                        href
-                    }
-                    spineItems.add(fullPath)
-                    Log.d(TAG, "Added spine item: $idref -> $fullPath")
-
-                } else {
+                if (href.isNullOrBlank()) {
                     Log.w(TAG, "Manifest item not found for spine idref: $idref")
+                    null
+                } else {
+                    val fullPath = normalizeEpubPath(resolveRelativePath(Uri.decode(href), opfPath))
+                    Log.d(TAG, "Added spine item: $idref -> $fullPath")
+                    fullPath
                 }
             }
 
@@ -2415,71 +2486,50 @@ class EpubReaderActivity : AppCompatActivity() {
         zipFile: ZipFile,
         opfPath: String
     ): Map<String, String> {
-        val result = mutableMapOf<String, String>()
+        val result = LinkedHashMap<String, String>()
         try {
-            val opfDir = if (opfPath.contains("/")) opfPath.substring(0, opfPath.lastIndexOf("/") + 1) else ""
-
-            // Try EPUB3 nav document first
-            val navHref = Regex("<item[^>]+properties=\"[^\"]*nav[^\"]*\"[^>]+href=\"([^\"]+)\"[^>]*>", RegexOption.IGNORE_CASE)
-                .find(opfContent)?.groupValues?.getOrNull(1)
-                ?: Regex("<item[^>]+href=\"([^\"]+)\"[^>]+properties=\"[^\"]*nav[^\"]*\"[^>]*>", RegexOption.IGNORE_CASE)
-                    .find(opfContent)?.groupValues?.getOrNull(1)
-
-            if (navHref != null) {
-                val navPath = if (opfDir.isNotEmpty()) opfDir + navHref else navHref
-                val navEntry = allEntries.find { it.name == navPath }
+            val opfDoc = Jsoup.parse(opfContent, "", Parser.xmlParser())
+            val navItem = opfDoc.select("manifest item").firstOrNull {
+                it.attr("properties").split(Regex("\\s+")).any { property -> property.equals("nav", true) }
+            }
+            if (navItem != null) {
+                val navPath = normalizeEpubPath(resolveRelativePath(Uri.decode(navItem.attr("href")), opfPath))
+                val navEntry = allEntries.firstOrNull { normalizeEpubPath(it.name) == navPath }
                 if (navEntry != null) {
-                    val navHtml = readZipEntry(zipFile, navEntry)
-                    val doc = Jsoup.parse(navHtml)
-                    val navs = doc.select("nav")
-                    for (nav in navs) {
-                        val epubType = nav.attr("epub:type").lowercase()
-                        val role = nav.attr("type").lowercase()
-                        if (epubType.contains("toc") || role.contains("toc") || nav.id() == "toc" || nav.className().contains("toc")) {
-                            val links = nav.select("a[href]")
-                            for (a in links) {
-                                val href = a.attr("href")
-                                val text = a.text().trim()
-                                if (text.isNotEmpty()) {
-                                    val base = href.substringBefore("#")
-                                    val full = resolveRelativePath(base, opfPath)
-                                    val normalized = if (full.startsWith("/")) full.substring(1) else full
-                                    result[normalized] = text
-                                }
-                            }
-                            if (result.isNotEmpty()) return result
+                    val navDoc = Jsoup.parse(readZipEntry(zipFile, navEntry))
+                    val tocNav = navDoc.select("nav").firstOrNull { nav ->
+                        nav.attr("epub:type").split(Regex("\\s+")).any { it.equals("toc", true) } ||
+                            nav.attr("type").equals("toc", true) || nav.id().equals("toc", true) || nav.classNames().any { it.equals("toc", true) }
+                    }
+                    tocNav?.select("a[href]")?.forEach { link ->
+                        val href = link.attr("href")
+                        val base = href.substringBefore("#")
+                        val normalized = normalizeEpubPath(resolveRelativePath(Uri.decode(base), navPath))
+                        val text = link.text().trim()
+                        if (text.isNotEmpty()) {
+                            result[normalized] = text
+                            tocTargetMap[normalized] = href
                         }
                     }
                 }
             }
+            if (result.isNotEmpty()) return result
 
-            // Fallback: EPUB2 NCX
-            val spineTocId = Regex("<spine[^>]+toc=\"([^\"]+)\"", RegexOption.IGNORE_CASE)
-                .find(opfContent)?.groupValues?.getOrNull(1)
-            if (spineTocId != null) {
-                val idEsc = Regex.escape(spineTocId)
-                val ncxHref = Regex("<item[^>]+id=\"${idEsc}\"[^>]+href=\"([^\"]+)\"[^>]*>", RegexOption.IGNORE_CASE)
-                    .find(opfContent)?.groupValues?.getOrNull(1)
-                    ?: Regex("<item[^>]+href=\"([^\"]+)\"[^>]+id=\"${idEsc}\"[^>]*>", RegexOption.IGNORE_CASE)
-                        .find(opfContent)?.groupValues?.getOrNull(1)
-                if (ncxHref != null) {
-                    val ncxPath = if (opfDir.isNotEmpty()) opfDir + ncxHref else ncxHref
-                    val ncxEntry = allEntries.find { it.name == ncxPath }
-                    if (ncxEntry != null) {
-                        val ncxXml = readZipEntry(zipFile, ncxEntry)
-                        val pattern = Regex(
-                            "<navPoint[\\s\\S]*?<navLabel>[\\s\\S]*?<text>(.*?)</text>[\\s\\S]*?<content[^>]+src=\"([^\"]+)\"[^>]*/?>",
-                            RegexOption.IGNORE_CASE
-                        )
-                        for (m in pattern.findAll(ncxXml)) {
-                            val text = m.groupValues[1].trim()
-                            val href = m.groupValues[2]
-                            if (text.isNotEmpty()) {
-                                val base = href.substringBefore("#")
-                                val full = resolveRelativePath(base, opfPath)
-                                val normalized = if (full.startsWith("/")) full.substring(1) else full
-                                if (!result.containsKey(normalized)) result[normalized] = text
-                            }
+            val spineTocId = opfDoc.selectFirst("spine")?.attr("toc").orEmpty()
+            val ncxHref = opfDoc.select("manifest item").firstOrNull { it.attr("id") == spineTocId }?.attr("href")
+            if (!ncxHref.isNullOrBlank()) {
+                val ncxPath = normalizeEpubPath(resolveRelativePath(Uri.decode(ncxHref), opfPath))
+                val ncxEntry = allEntries.firstOrNull { normalizeEpubPath(it.name) == ncxPath }
+                if (ncxEntry != null) {
+                    val ncxDoc = Jsoup.parse(readZipEntry(zipFile, ncxEntry), "", Parser.xmlParser())
+                    ncxDoc.select("navPoint").forEach { navPoint ->
+                        val label = navPoint.selectFirst("navLabel text")?.text()?.trim().orEmpty()
+                        val href = navPoint.selectFirst("content")?.attr("src").orEmpty()
+                        if (label.isNotEmpty() && href.isNotEmpty()) {
+                            val base = href.substringBefore("#")
+                            val normalized = normalizeEpubPath(resolveRelativePath(Uri.decode(base), ncxPath))
+                            result[normalized] = label
+                            tocTargetMap[normalized] = href
                         }
                     }
                 }
@@ -2491,10 +2541,16 @@ class EpubReaderActivity : AppCompatActivity() {
     }
 
 
-    private fun loadPage(pageIndex: Int) {
+    private fun loadPage(pageIndex: Int, scrollPositionOverride: Int? = null) {
         if (pageIndex < 0 || pageIndex >= htmlFiles.size) {
             return
         }
+
+        if (pageIndex != currentPage && !restoringNavigationHistory && htmlFiles.isNotEmpty()) {
+            navigationHistory.addLast(ReaderLocation(currentPage, binding.webView.scrollY))
+        }
+        restoringNavigationHistory = false
+        pendingScrollPosition = scrollPositionOverride
 
         val htmlContent = htmlFiles[pageIndex]
 
@@ -2508,7 +2564,7 @@ class EpubReaderActivity : AppCompatActivity() {
         binding.webView.alpha = 0.3f
 
         // Get the target scroll position before loading the page
-        val targetScrollY = pageScrollPositions[pageIndex] ?: 0
+        val targetScrollY = scrollPositionOverride ?: pageScrollPositions[pageIndex] ?: 0
         Log.d(TAG, "Target scroll position for page $pageIndex: $targetScrollY")
 
         // Load the HTML content into the WebView
@@ -2553,6 +2609,64 @@ class EpubReaderActivity : AppCompatActivity() {
                     .start()
             }, 100)
         }
+    }
+
+    private fun handleBookLink(url: String): Boolean {
+        val normalizedUrl = if (url.startsWith("//")) "https:$url" else url
+        val uri = runCatching { Uri.parse(normalizedUrl) }.getOrNull() ?: return false
+        val scheme = uri.scheme?.lowercase()
+        if (scheme == "http" || scheme == "https" || scheme == "mailto" || scheme == "tel") {
+            return try {
+                startActivity(Intent(Intent.ACTION_VIEW, uri))
+                true
+            } catch (e: android.content.ActivityNotFoundException) {
+                Log.w(TAG, "No external app available for link: $normalizedUrl", e)
+                false
+            }
+        }
+
+        val fragment = uri.fragment?.let { Uri.decode(it) }
+        val rawPath = uri.path?.let { Uri.decode(it) }?.replace('\\', '/')?.trimStart('/') ?: ""
+        val currentFile = htmlFileNames.getOrNull(currentPage)?.replace('\\', '/') ?: ""
+        val path = if (rawPath.isEmpty()) {
+            ""
+        } else if (rawPath.startsWith("/")) {
+            normalizeEpubPath(rawPath)
+        } else {
+            normalizeEpubPath(resolveRelativePath(rawPath, currentFile))
+        }
+        val targetIndex = if (path.isEmpty()) {
+            currentPage
+        } else {
+            htmlFileNames.indexOfFirst {
+                val candidate = normalizeEpubPath(it)
+                candidate == path
+            }
+        }
+        if (targetIndex < 0) return false
+
+        if (targetIndex != currentPage) {
+            pendingAnchor = fragment
+            loadPage(targetIndex)
+        } else if (!fragment.isNullOrEmpty()) {
+            binding.webView.evaluateJavascript(
+                "(document.getElementById(${JSONObject.quote(fragment)}) || document.getElementsByName(${JSONObject.quote(fragment)})[0])?.scrollIntoView({block:'start'});",
+                null
+            )
+        }
+        return true
+    }
+
+    private fun normalizeEpubPath(path: String): String {
+        val parts = ArrayDeque<String>()
+        path.split('/').forEach { part ->
+            when (part) {
+                "", "." -> Unit
+                ".." -> if (parts.isNotEmpty()) parts.removeLast()
+                else -> parts.addLast(part)
+            }
+        }
+        return parts.joinToString("/")
     }
 
     private fun cleanHtml(html: String): String {
@@ -2752,29 +2866,6 @@ class EpubReaderActivity : AppCompatActivity() {
         // Add JavaScript interface
         binding.webView.addJavascriptInterface(JavaScriptInterface(), JS_INTERFACE_NAME)
 
-        // Set WebView client to handle resource loading and errors
-        binding.webView.webViewClient = object : android.webkit.WebViewClient() {
-            override fun onReceivedError(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?, error: android.webkit.WebResourceError?) {
-                super.onReceivedError(view, request, error)
-                Log.e(TAG, "WebView error: ${error?.description} for URL: ${request?.url}")
-            }
-
-            override fun onReceivedHttpError(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?, errorResponse: android.webkit.WebResourceResponse?) {
-                super.onReceivedHttpError(view, request, errorResponse)
-                Log.e(TAG, "WebView HTTP error: ${errorResponse?.statusCode} for URL: ${request?.url}")
-            }
-
-            override fun shouldOverrideUrlLoading(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?): Boolean {
-                // Allow file:// URLs for local images
-                val url = request?.url?.toString()
-                if (url?.startsWith("file://") == true) {
-                    Log.d(TAG, "Loading local file: $url")
-                    return false // Let WebView handle it
-                }
-                return super.shouldOverrideUrlLoading(view, request)
-            }
-        }
-
         // Set WebChromeClient to capture JavaScript console messages
         binding.webView.webChromeClient = object : android.webkit.WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: android.webkit.ConsoleMessage?): Boolean {
@@ -2787,6 +2878,26 @@ class EpubReaderActivity : AppCompatActivity() {
 
         // Set WebViewClient to inject our JavaScript after page load
         binding.webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
+                val url = request?.url?.toString().orEmpty()
+                return url.isNotEmpty() && handleBookLink(url)
+            }
+
+            @Suppress("DEPRECATION")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                return !url.isNullOrEmpty() && handleBookLink(url)
+            }
+
+            override fun onReceivedError(view: WebView?, request: android.webkit.WebResourceRequest?, error: android.webkit.WebResourceError?) {
+                super.onReceivedError(view, request, error)
+                Log.e(TAG, "WebView error: ${error?.description} for URL: ${request?.url}")
+            }
+
+            override fun onReceivedHttpError(view: WebView?, request: android.webkit.WebResourceRequest?, errorResponse: android.webkit.WebResourceResponse?) {
+                super.onReceivedHttpError(view, request, errorResponse)
+                Log.e(TAG, "WebView HTTP error: ${errorResponse?.statusCode} for URL: ${request?.url}")
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
 
@@ -2799,8 +2910,12 @@ class EpubReaderActivity : AppCompatActivity() {
                     .setDuration(200)
                     .start()
 
+                // A TOC jump explicitly overrides the saved reading position.
+                val forcedScrollPosition = pendingScrollPosition
+                pendingScrollPosition = null
+
                 // Get the target scroll position
-                val targetScrollY = pageScrollPositions[currentPage] ?: run {
+                val targetScrollY = forcedScrollPosition ?: pageScrollPositions[currentPage] ?: run {
                     // If not in memory, try to get from page-specific persistent storage
                     epubFilePath?.let { path ->
                         val pageSpecificScrollY = bookPositionManager.getScrollPosition("${path}_page_$currentPage")
@@ -2847,10 +2962,24 @@ class EpubReaderActivity : AppCompatActivity() {
                             }
                         }, 100)
                     }
+                } else if (forcedScrollPosition != null) {
+                    binding.webView.post {
+                        binding.webView.scrollTo(0, 0)
+                    }
                 }
 
                 // Always inject JavaScript and reapply theme for the new page
                 injectJavaScriptHandlers()
+                pendingAnchor?.let { anchor ->
+                    pendingAnchor = null
+                    binding.webView.postDelayed({
+                        val escapedAnchor = JSONObject.quote(anchor)
+                        binding.webView.evaluateJavascript(
+                            "(document.getElementById($escapedAnchor) || document.getElementsByName($escapedAnchor)[0])?.scrollIntoView({block:'start'});",
+                            null
+                        )
+                    }, 150)
+                }
                 // Ensure theme preference is consistently applied on every page
                 applyTheme()
 
@@ -3005,6 +3134,9 @@ class EpubReaderActivity : AppCompatActivity() {
 
                             // Remove visual indicator
                             element.style.backgroundColor = '';
+                            element.style.border = '';
+                            element.style.borderRadius = '';
+                            element.style.padding = '';
                         }
 
                         return true;
@@ -3076,6 +3208,9 @@ class EpubReaderActivity : AppCompatActivity() {
 
                             // Remove visual indicator
                             element.style.backgroundColor = '';
+                            element.style.border = '';
+                            element.style.borderRadius = '';
+                            element.style.padding = '';
 
                             // Mark as not translated
                             window.markElementAsTranslated(elementId, false);
@@ -3131,11 +3266,18 @@ class EpubReaderActivity : AppCompatActivity() {
                         // Restore translated state from data attributes
                         restoreTranslatedState();
 
-                        // Add a mutation observer to handle dynamically added content
+                        // Batch DOM mutations so translation updates cannot repeatedly
+                        // rescan the entire book while the user is scrolling.
+                        var processTimer = null;
                         var observer = new MutationObserver(function(mutations) {
-                            processTextElements();
-                            // Also check for new translated elements
-                            restoreTranslatedState();
+                            if (processTimer !== null) {
+                                return;
+                            }
+                            processTimer = setTimeout(function() {
+                                processTimer = null;
+                                processTextElements();
+                                restoreTranslatedState();
+                            }, 100);
                         });
 
                         observer.observe(document.body, { childList: true, subtree: true });
@@ -3193,7 +3335,7 @@ class EpubReaderActivity : AppCompatActivity() {
 
                         // First, prioritize proper block-level paragraph elements
                         // Focus on semantic paragraph tags and common EPUB paragraph containers
-                        var paragraphs = document.querySelectorAll('p, h1, h2, h3, figcaption, div.paragraph, div.text, div.para, article > div, section > div, blockquote');
+                        var paragraphs = document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, figcaption, div.paragraph, div.text, div.para, article > div, section > div, blockquote');
                         var textElements = [];
                         var processedElements = new Set();
 
@@ -3234,7 +3376,7 @@ class EpubReaderActivity : AppCompatActivity() {
                         }
 
                         // Now process other text-containing elements
-                        var allElements = document.querySelectorAll('div, section, article, span, h1, h2, h3, h4, h5, h6, li');
+                        var allElements = document.querySelectorAll('div, section, article, h1, h2, h3, h4, h5, h6, li');
 
                         // Process elements that might contain text
                         for (var i = 0; i < allElements.length; i++) {
@@ -3249,6 +3391,13 @@ class EpubReaderActivity : AppCompatActivity() {
                             if (element.classList.contains('hidden') ||
                                 getComputedStyle(element).display === 'none' ||
                                 getComputedStyle(element).visibility === 'hidden') {
+                                continue;
+                            }
+
+                            // Inline children belong to their parent paragraph; do not
+                            // give each formatted fragment its own translation box.
+                            var displayStyle = getComputedStyle(element).display;
+                            if (displayStyle === 'inline' || displayStyle === 'inline-block') {
                                 continue;
                             }
 
@@ -3305,9 +3454,48 @@ class EpubReaderActivity : AppCompatActivity() {
                         var elementText = element.textContent.trim();
                         var elementPath = getElementPath(element);
                         var contentHash = hashCode(elementText.substring(0, Math.min(50, elementText.length)));
-                        var elementId = 'translator-' + contentHash + '-' + elementPath.length;
+                        // The path length is not unique for sibling list items. Hash the
+                        // complete path so every bullet gets its own translation target.
+                        var pathHash = hashCode(elementPath);
+                        var elementId = 'translator-' + contentHash + '-' + pathHash;
                         element.setAttribute('data-translator-id', elementId);
                         element.setAttribute('data-content-hash', contentHash);
+
+                        // Let links keep their normal WebView navigation behavior.
+                        // The paragraph gesture handler must not cancel anchor clicks.
+                        var links = element.querySelectorAll('a[href]');
+                        for (var linkIndex = 0; linkIndex < links.length; linkIndex++) {
+                            let link = links[linkIndex];
+                            let touchStartX = 0;
+                            let touchStartY = 0;
+                            let linkMoved = false;
+                            let activateLink = function(event) {
+                                event.stopPropagation();
+                                event.preventDefault();
+                                if (window.AndroidTranslator) {
+                                    window.AndroidTranslator.onLinkClick(link.getAttribute('href') || '');
+                                }
+                            };
+                            link.addEventListener('click', activateLink);
+                            link.addEventListener('touchstart', function(event) {
+                                var touch = event.touches[0];
+                                touchStartX = touch.clientX;
+                                touchStartY = touch.clientY;
+                                linkMoved = false;
+                            }, {passive: true});
+                            link.addEventListener('touchmove', function(event) {
+                                var touch = event.touches[0];
+                                if (Math.abs(touch.clientX - touchStartX) > 12 ||
+                                    Math.abs(touch.clientY - touchStartY) > 12) {
+                                    linkMoved = true;
+                                }
+                            }, {passive: true});
+                            link.addEventListener('touchend', function(event) {
+                                if (!linkMoved) {
+                                    activateLink(event);
+                                }
+                            });
+                        }
 
                         // Log the element ID for debugging
                         console.log('Assigned ID: ' + elementId + ' to element with text: ' + elementText.substring(0, 30) + '...');
@@ -3635,10 +3823,12 @@ class EpubReaderActivity : AppCompatActivity() {
                         if (element.hasAttribute('data-translated')) {
                             console.log('Element is already translated, toggling back to original');
 
-                            // DIRECT APPROACH: Restore original content immediately
-                            if (originalContents[elementId]) {
+                            // DIRECT APPROACH: Restore original content immediately.
+                            // Use the DOM snapshot as a fallback after page/state restoration.
+                            var savedOriginalHtml = originalContents[elementId] || element.getAttribute('data-original-html');
+                            if (savedOriginalHtml) {
                                 // Restore original content
-                                element.innerHTML = originalContents[elementId];
+                                element.innerHTML = savedOriginalHtml;
 
                                 // Restore original styles
                                 if (originalStyles[elementId]) {
@@ -3691,6 +3881,9 @@ class EpubReaderActivity : AppCompatActivity() {
 
                                 // Remove visual indicator
                                 element.style.backgroundColor = '';
+                                element.style.border = '';
+                                element.style.borderRadius = '';
+                                element.style.padding = '';
 
                                 // Update state tracking
                                 delete translatedElements[elementId];
@@ -3699,13 +3892,12 @@ class EpubReaderActivity : AppCompatActivity() {
 
                                 // Get the original text to notify Android
                                 var tempDiv = document.createElement('div');
-                                tempDiv.innerHTML = originalContents[elementId];
+                                tempDiv.innerHTML = savedOriginalHtml;
                                 var originalText = tempDiv.textContent.trim();
 
                                 // Notify Android to update its state
                                 window.AndroidTranslator.onToggleTranslation(originalText, elementId);
                                 console.log('Successfully restored original content');
-                                return;
                             } else {
                                 console.error('Original content not found for element: ' + elementId);
                             }
@@ -3934,26 +4126,39 @@ class EpubReaderActivity : AppCompatActivity() {
                             var tempDiv = document.createElement('div');
                             tempDiv.innerHTML = originalContents[elementId];
 
-                            // Replace text nodes while preserving other elements (like images)
-                            function replaceTextInNode(node, originalText, translatedText) {
+                            // Replace the complete text across nested nodes while preserving
+                            // markup such as emphasis, links, and images.
+                            var textNodes = [];
+                            function collectTextNodes(node) {
                                 if (node.nodeType === Node.TEXT_NODE) {
-                                    // Replace text content in text nodes
                                     if (node.textContent.trim().length > 0) {
-                                        node.textContent = node.textContent.replace(originalText, translatedText);
+                                        textNodes.push(node);
                                     }
                                 } else if (node.nodeType === Node.ELEMENT_NODE) {
-                                    // Recursively process child nodes
                                     for (var i = 0; i < node.childNodes.length; i++) {
-                                        replaceTextInNode(node.childNodes[i], originalText, translatedText);
+                                        collectTextNodes(node.childNodes[i]);
                                     }
                                 }
                             }
 
-                            // Get the original text content for replacement
-                            var originalTextContent = tempDiv.textContent.trim();
+                            function replaceTextInNode(node, translatedText) {
+                                collectTextNodes(node);
+                                var originalLength = 0;
+                                for (var i = 0; i < textNodes.length; i++) {
+                                    originalLength += textNodes[i].textContent.length;
+                                }
+                                var consumed = 0;
+                                for (var i = 0; i < textNodes.length; i++) {
+                                    var start = Math.floor((consumed / originalLength) * translatedText.length);
+                                    consumed += textNodes[i].textContent.length;
+                                    var end = i === textNodes.length - 1
+                                        ? translatedText.length
+                                        : Math.floor((consumed / originalLength) * translatedText.length);
+                                    textNodes[i].textContent = translatedText.substring(start, end);
+                                }
+                            }
 
-                            // Replace text while preserving HTML structure
-                            replaceTextInNode(tempDiv, originalTextContent, translatedText);
+                            replaceTextInNode(tempDiv, translatedText);
 
                             // Update the element with the modified HTML (preserving images)
                             element.innerHTML = tempDiv.innerHTML;
@@ -4364,15 +4569,38 @@ class EpubReaderActivity : AppCompatActivity() {
         // Set up a simple touch listener for the WebView
         var startX = 0f
         var startY = 0f
+        var longPressTriggered = false
+        var selectionMovement = false
+        val longPressHandler = Handler(Looper.getMainLooper())
+        val longPressRunnable = Runnable {
+            longPressTriggered = true
+        }
 
         binding.webView.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     startX = event.x
                     startY = event.y
+                    longPressTriggered = false
+                    selectionMovement = false
+                    longPressHandler.postDelayed(
+                        longPressRunnable,
+                        ViewConfiguration.getLongPressTimeout().toLong()
+                    )
+                    false
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (longPressTriggered) {
+                        val movementX = event.x - startX
+                        val movementY = event.y - startY
+                        if (Math.abs(movementX) > 20 || Math.abs(movementY) > 20) {
+                            selectionMovement = true
+                        }
+                    }
                     false
                 }
                 MotionEvent.ACTION_UP -> {
+                    longPressHandler.removeCallbacks(longPressRunnable)
                     val endX = event.x
                     val endY = event.y
 
@@ -4383,7 +4611,17 @@ class EpubReaderActivity : AppCompatActivity() {
                     val isHorizontalSwipe = Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 120
                     val isSignificantMovement = Math.abs(diffX) > 50 || Math.abs(diffY) > 50
 
-                    if (isHorizontalSwipe && isSignificantMovement) {
+                    if (longPressTriggered && !selectionMovement && !isSignificantMovement) {
+                        clearWebViewSelection()
+                        toggleBars()
+                        return@setOnTouchListener true
+                    }
+
+                    if (!longPressTriggered && !isSignificantMovement) {
+                        clearWebViewSelection()
+                    }
+
+                    if (!longPressTriggered && isHorizontalSwipe && isSignificantMovement) {
                         // Always save the current scroll position for the current page
                         val currentScrollY = binding.webView.scrollY
                         pageScrollPositions[currentPage] = currentScrollY
@@ -4479,26 +4717,63 @@ class EpubReaderActivity : AppCompatActivity() {
                                         element.setAttribute('data-original-text', element.textContent);
                                         element.setAttribute('data-translated-text', `$translatedText`);
                                         element.setAttribute('data-target-language', '$targetLanguage');
+                                        element.setAttribute('data-translated', 'true');
+                                        element.classList.add('translator-translated');
+
+                                        // Rebuild the in-page toggle state after a relaunch.
+                                        if (typeof originalContents !== 'undefined') {
+                                            originalContents['$paragraphId'] = element.getAttribute('data-original-html');
+                                        }
+                                        if (typeof translatedElements !== 'undefined') {
+                                            translatedElements['$paragraphId'] = true;
+                                        }
+                                        if (typeof originalStyles !== 'undefined' && !originalStyles['$paragraphId']) {
+                                            originalStyles['$paragraphId'] = {
+                                                direction: element.style.direction || '',
+                                                textAlign: element.style.textAlign || '',
+                                                borderLeft: element.style.borderLeft || '',
+                                                borderRight: element.style.borderRight || '',
+                                                paddingLeft: element.style.paddingLeft || '',
+                                                paddingRight: element.style.paddingRight || ''
+                                            };
+                                        }
 
                                         // Preserve HTML structure while replacing text
                                         var tempDiv = document.createElement('div');
                                         tempDiv.innerHTML = element.getAttribute('data-original-html') || element.innerHTML;
 
                                         // Replace text nodes while preserving other elements (like images)
-                                        function replaceTextInNode(node, originalText, translatedText) {
+                                        var textNodes = [];
+                                        function collectTextNodes(node) {
                                             if (node.nodeType === Node.TEXT_NODE) {
                                                 if (node.textContent.trim().length > 0) {
-                                                    node.textContent = node.textContent.replace(originalText, translatedText);
+                                                    textNodes.push(node);
                                                 }
                                             } else if (node.nodeType === Node.ELEMENT_NODE) {
                                                 for (var i = 0; i < node.childNodes.length; i++) {
-                                                    replaceTextInNode(node.childNodes[i], originalText, translatedText);
+                                                    collectTextNodes(node.childNodes[i]);
                                                 }
                                             }
                                         }
 
-                                        var originalTextContent = tempDiv.textContent.trim();
-                                        replaceTextInNode(tempDiv, originalTextContent, `$translatedText`);
+                                        function replaceTextInNode(node, translatedText) {
+                                            collectTextNodes(node);
+                                            var originalLength = 0;
+                                            for (var i = 0; i < textNodes.length; i++) {
+                                                originalLength += textNodes[i].textContent.length;
+                                            }
+                                            var consumed = 0;
+                                            for (var i = 0; i < textNodes.length; i++) {
+                                                var start = Math.floor((consumed / originalLength) * translatedText.length);
+                                                consumed += textNodes[i].textContent.length;
+                                                var end = i === textNodes.length - 1
+                                                    ? translatedText.length
+                                                    : Math.floor((consumed / originalLength) * translatedText.length);
+                                                textNodes[i].textContent = translatedText.substring(start, end);
+                                            }
+                                        }
+
+                                        replaceTextInNode(tempDiv, `$translatedText`);
 
                                         // Update element with preserved HTML structure
                                         element.innerHTML = tempDiv.innerHTML;
@@ -4965,6 +5240,31 @@ class EpubReaderActivity : AppCompatActivity() {
     /**
      * Handle double-click translation for paragraphs
      */
+    private fun updateCreditsDisplay() {
+        if (::binding.isInitialized) {
+            binding.creditsTextView.text = getString(R.string.translation_credits, translationCredits)
+        }
+    }
+
+    private fun consumeTranslationCredit(): Boolean {
+        synchronized(translationLock) {
+            if (translationCredits <= 0) return false
+            translationCredits--
+            creditsPreferences.edit().putInt("remaining", translationCredits).apply()
+            updateCreditsDisplay()
+            return true
+        }
+    }
+
+    private fun refundTranslationCredit() {
+        synchronized(translationLock) {
+            translationCredits++
+            creditsPreferences.edit().putInt("remaining", translationCredits).apply()
+            updateCreditsDisplay()
+            Log.d(TAG, "Translation credit refunded; remaining=$translationCredits")
+        }
+    }
+
     private fun handleDoubleClickTranslation(paragraphId: String, paragraphText: String) {
         synchronized(translationLock) {
             try {
@@ -5009,26 +5309,33 @@ class EpubReaderActivity : AppCompatActivity() {
                 Log.d(TAG, "🔍 Visible translations count: ${currentVisibleTranslations?.size ?: 0}")
                 Log.d(TAG, "🔍 Pending translations: ${pendingTranslations.size}")
 
-                if (isCurrentlyTranslated && sameLanguageAndMethod) {
-                    // Toggle back to original text only if same method and language
-                    Log.d(TAG, "🔙 Toggling back to original text for paragraph: $paragraphId")
+                // Default API uses double-tap as a show/hide toggle. G/Y methods use a
+                // repeated double-tap as a fresh external translation attempt.
+                if (currentTranslationMethod == TranslationMethod.DEFAULT &&
+                    storedTranslationMethod == TranslationMethod.DEFAULT &&
+                    sameLanguage && isCurrentlyTranslated
+                ) {
+                    Log.d(TAG, "🔙 Restoring original paragraph: $paragraphId")
                     toggleTranslationVisibility(paragraphId, false)
-                } else {
-                    // Re-translate with new method/language or translate for first time
-                    if (isCurrentlyTranslated) {
-                        Log.d(TAG, "🔄 Re-translating paragraph with different method/language: $paragraphId")
-                        // Clear previous translation state to allow re-translation
-                        currentVisibleTranslations?.remove(paragraphId)
-                        currentTranslations?.remove(paragraphId)
-                        currentTargetLanguages?.remove(paragraphId)
-                        currentTranslationMethods?.remove(paragraphId)
-                    }
-
-                    // Mark as pending and translate the paragraph
-                    pendingTranslations.add(paragraphId)
-                    Log.d(TAG, "🌐 Starting translation for paragraph: $paragraphId (marked as pending)")
-                    performTranslation(paragraphId, paragraphText)
+                    return
                 }
+
+                if (isCurrentlyTranslated) {
+                    Log.d(TAG, "🔄 Re-translating paragraph: $paragraphId")
+                    currentVisibleTranslations?.remove(paragraphId)
+                    currentTranslations?.remove(paragraphId)
+                    currentTargetLanguages?.remove(paragraphId)
+                    currentTranslationMethods?.remove(paragraphId)
+                }
+
+                if (!consumeTranslationCredit()) {
+                    Toast.makeText(this, getString(R.string.no_translation_credits), Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                pendingTranslations.add(paragraphId)
+                Log.d(TAG, "🌐 Starting translation for paragraph: $paragraphId (marked as pending)")
+                performTranslation(paragraphId, paragraphText)
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error handling double-click translation", e)
                 // Remove from pending if error occurred
@@ -5066,10 +5373,14 @@ class EpubReaderActivity : AppCompatActivity() {
                         if (element) {
                             var elementId = '$paragraphId';
 
-                            // Store original HTML content in both attribute AND JavaScript object
-                            var originalHtml = element.innerHTML;
-                            element.setAttribute('data-original-html', originalHtml);
-                            element.setAttribute('data-original-text', element.textContent);
+                            // Capture the original HTML only once, before the first translation.
+                            // Reapplying a stored translation must never replace this snapshot.
+                            var originalHtml = element.getAttribute('data-original-html');
+                            if (!originalHtml) {
+                                originalHtml = element.innerHTML;
+                                element.setAttribute('data-original-html', originalHtml);
+                                element.setAttribute('data-original-text', element.textContent);
+                            }
                             element.setAttribute('data-translated-text', `$translatedText`);
                             element.setAttribute('data-target-language', '$targetLanguage');
 
@@ -5095,19 +5406,37 @@ class EpubReaderActivity : AppCompatActivity() {
                                 };
                             }
 
-                            // If there is no inline media, replace entire text content for full-paragraph translation
-                            var hasInlineMedia = element.querySelector('img, svg, picture, figure, video, audio') != null;
-                            if (!hasInlineMedia) {
-                                element.innerText = `$translatedText`;
-                            } else {
-                                // Preserve media: capture media markup, replace text, then append media back
-                                var mediaNodes = element.querySelectorAll('img, svg, picture, figure, video, audio');
-                                var mediaHtml = '';
-                                for (var i = 0; i < mediaNodes.length; i++) {
-                                    mediaHtml += mediaNodes[i].outerHTML;
+                            // Replace text nodes while preserving inline formatting and media.
+                            var textNodes = [];
+                            function collectTextNodes(node) {
+                                if (node.nodeType === Node.TEXT_NODE) {
+                                    if (node.textContent.trim().length > 0) {
+                                        textNodes.push(node);
+                                    }
+                                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                                    for (var i = 0; i < node.childNodes.length; i++) {
+                                        collectTextNodes(node.childNodes[i]);
+                                    }
                                 }
-                                element.innerText = `$translatedText`;
-                                element.innerHTML += mediaHtml;
+                            }
+
+                            collectTextNodes(element);
+                            var originalLength = 0;
+                            for (var i = 0; i < textNodes.length; i++) {
+                                originalLength += textNodes[i].textContent.length;
+                            }
+                            if (originalLength > 0) {
+                                var consumed = 0;
+                                for (var i = 0; i < textNodes.length; i++) {
+                                    var start = Math.floor((consumed / originalLength) * `$translatedText`.length);
+                                    consumed += textNodes[i].textContent.length;
+                                    var end = i === textNodes.length - 1
+                                        ? `$translatedText`.length
+                                        : Math.floor((consumed / originalLength) * `$translatedText`.length);
+                                    textNodes[i].textContent = `$translatedText`.substring(start, end);
+                                }
+                            } else {
+                                element.textContent = `$translatedText`;
                             }
                             element.style.border = '2px solid #4CAF50';
                             element.style.borderRadius = '4px';
@@ -5145,6 +5474,11 @@ class EpubReaderActivity : AppCompatActivity() {
                             element.style.backgroundColor = '';
                             element.style.direction = '';
                             element.style.textAlign = '';
+                            element.removeAttribute('data-translated');
+                            element.classList.remove('translator-translated');
+                            if (typeof translatedElements !== 'undefined') {
+                                delete translatedElements['$paragraphId'];
+                            }
                             element.removeAttribute('data-original-html');
                             element.removeAttribute('data-original-text');
                             element.removeAttribute('data-translated-text');
@@ -5158,6 +5492,11 @@ class EpubReaderActivity : AppCompatActivity() {
                             element.style.backgroundColor = '';
                             element.style.direction = '';
                             element.style.textAlign = '';
+                            element.removeAttribute('data-translated');
+                            element.classList.remove('translator-translated');
+                            if (typeof translatedElements !== 'undefined') {
+                                delete translatedElements['$paragraphId'];
+                            }
                             element.removeAttribute('data-original-text');
                             element.removeAttribute('data-translated-text');
                             element.removeAttribute('data-target-language');
@@ -5490,7 +5829,11 @@ class EpubReaderActivity : AppCompatActivity() {
     /**
      * Reset element visual state (remove loading indicators)
      */
-    private fun resetElementState(paragraphId: String) {
+    private fun resetElementState(paragraphId: String, refundCredit: Boolean = true) {
+        if (refundCredit) {
+            refundTranslationCredit()
+            pendingTranslations.remove(paragraphId)
+        }
         val resetJsCode = """
             (function() {
                 try {
@@ -5540,8 +5883,7 @@ class EpubReaderActivity : AppCompatActivity() {
             TranslationMethod.DEFAULT -> popup.menu.findItem(R.id.translation_method_default)?.isChecked = true
             TranslationMethod.GOOGLE_INTENT -> popup.menu.findItem(R.id.translation_method_google)?.isChecked = true
             TranslationMethod.YANDEX_INTENT -> popup.menu.findItem(R.id.translation_method_yandex)?.isChecked = true
-            TranslationMethod.GOOGLE_API -> popup.menu.findItem(R.id.translation_method_google_api)?.isChecked = true
-            TranslationMethod.YANDEX_API -> popup.menu.findItem(R.id.translation_method_yandex_api)?.isChecked = true
+            TranslationMethod.GOOGLE_API, TranslationMethod.YANDEX_API -> Unit
         }
 
         popup.setOnMenuItemClickListener { item ->
@@ -5556,14 +5898,6 @@ class EpubReaderActivity : AppCompatActivity() {
                 }
                 R.id.translation_method_yandex -> {
                     setTranslationMethod(TranslationMethod.YANDEX_INTENT)
-                    true
-                }
-                R.id.translation_method_google_api -> {
-                    setTranslationMethod(TranslationMethod.GOOGLE_API)
-                    true
-                }
-                R.id.translation_method_yandex_api -> {
-                    setTranslationMethod(TranslationMethod.YANDEX_API)
                     true
                 }
                 else -> false
@@ -5623,6 +5957,7 @@ class EpubReaderActivity : AppCompatActivity() {
                 }
 
                 // Launch with result
+                pendingExternalTranslationParagraphId = paragraphId
                 translationLauncher.launch(intent)
                 Log.d(TAG, "Launched Intent translation with ACTION_PROCESS_TEXT")
 
@@ -5736,6 +6071,16 @@ class EpubReaderActivity : AppCompatActivity() {
      */
     inner class JavaScriptInterface {
         @android.webkit.JavascriptInterface
+        fun onLinkClick(href: String) {
+            runOnUiThread {
+                val link = href.trim()
+                if (link.isNotEmpty()) {
+                    handleBookLink(link)
+                }
+            }
+        }
+
+        @android.webkit.JavascriptInterface
         fun onParagraphClick(paragraphId: String, paragraphText: String, x: Float, y: Float) {
             runOnUiThread {
                 try {
@@ -5795,8 +6140,13 @@ class EpubReaderActivity : AppCompatActivity() {
                         val currentTargetLanguages = pageTranslationTargetLanguages[currentPage]
                         val currentTranslationMethods = pageTranslationMethods[currentPage]
 
-                        // Remove from visible translations
-                        currentVisibleTranslations?.remove(paragraphId)
+                        // Default API keeps the stored translation so the following
+                        // double-tap can restore the original paragraph. G/Y retries
+                        // clear visibility because they start a new external attempt.
+                        val storedMethod = currentTranslationMethods?.get(paragraphId)
+                        if (storedMethod != TranslationMethod.DEFAULT) {
+                            currentVisibleTranslations?.remove(paragraphId)
+                        }
 
                         // Keep the translation data but mark as not visible
                         // This allows re-translation without losing the stored translation
