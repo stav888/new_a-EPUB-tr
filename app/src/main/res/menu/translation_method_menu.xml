@@ -3,17 +3,7 @@
     
     <item
         android:id="@+id/translation_method_default"
-        android:title="D - Default API"
+        android:title="On-device ML Kit"
         android:icon="@drawable/ic_translate" />
-    
-    <item
-        android:id="@+id/translation_method_google"
-        android:title="G - Google Translate"
-        android:icon="@drawable/ic_google_translate" />
-    
-    <item
-        android:id="@+id/translation_method_yandex"
-        android:title="Y - Yandex Translate"
-        android:icon="@android:drawable/ic_menu_send" />
 
 </menu>

@@ -16,8 +16,8 @@ import kotlinx.coroutines.withContext
  * Manager for offline translation using ML Kit
  * Delegates to MlKitTranslationService for actual model management
  */
-class YandexOfflineManager(private val context: Context) {
-    private val TAG = "YandexOfflineManager"
+class MlKitOfflineManager(private val context: Context) {
+    private val TAG = "MlKitOfflineManager"
     private val mlKitService = MlKitTranslationService()
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences(

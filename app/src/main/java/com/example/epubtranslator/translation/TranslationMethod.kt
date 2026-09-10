@@ -2,19 +2,13 @@ package com.example.epubtranslator.translation
 
 import com.example.epubtranslator.R
 
-/**
- * Enum representing different translation methods available in the app
- */
+/** In-app paragraph translation is always performed by Google ML Kit on-device. */
 enum class TranslationMethod(
     val displayChar: String,
     val displayNameResId: Int,
     val description: String
 ) {
-    DEFAULT("D", R.string.translation_method_default, "Default API-based translation"),
-    GOOGLE_INTENT("G", R.string.translation_method_google, "Google Translate app integration"),
-    YANDEX_INTENT("Y", R.string.translation_method_yandex, "Yandex Translate app integration"),
-    GOOGLE_API("G2", R.string.translation_method_google_api, "Google Translate API direct"),
-    YANDEX_API("Y2", R.string.translation_method_yandex_api, "Yandex Translate API direct");
+    DEFAULT("ML", R.string.translation_method_ml_kit, "Google ML Kit on-device translation");
 
     companion object {
         /**

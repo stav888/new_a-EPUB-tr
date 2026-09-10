@@ -11,12 +11,13 @@
     <string name="cancel">Cancel</string>
     <string name="translate">Translate</string>
     <string name="translation">Translation</string>
+    <string name="ml_kit_translation">Google ML Kit (on-device)</string>
     <string name="loading">Loading…</string>
     <string name="loading_book">Loading book, please wait…</string>
     <string name="error_loading_epub">Error loading EPUB file</string>
     <string name="error_translation">Error translating text</string>
     <string name="no_text_selected">No text selected</string>
-    <string name="powered_by_yandex">Powered by Yandex.Translate</string>
+    <string name="powered_by_google">Translated with Google</string>
     <string name="powered_by_libretranslate">Powered by LibreTranslate</string>
     <string name="powered_by_mymemory">Powered by MyMemory Translation</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
@@ -46,33 +47,39 @@
     <string name="highlight_removed">Highlight removed</string>
     <string name="paragraph_translated">Paragraph translated</string>
     <string name="error_translating">Error translating text</string>
-    <string name="api">API:</string>
-    <string name="google_api">Google</string>
-    <string name="yandex_api">Yandex</string>
-    <string name="api_selection">Translation API</string>
-    <string name="api_changed">Translation API changed to %1$s</string>
     <string name="translation_removed">Translation removed</string>
 
     <!-- Translation Method Strings -->
-    <string name="translation_method_default">Default API</string>
-    <string name="translation_method_google">Google Translate</string>
-    <string name="translation_method_yandex">Yandex Translate</string>
-    <string name="translation_method_google_api">Google API</string>
-    <string name="translation_method_yandex_api">Yandex API</string>
+    <string name="translation_method_default">ML Kit</string>
+    <string name="translation_method_ml_kit">ML Kit</string>
     <string name="translation_method_selected">Translation method: %1$s</string>
-    <string name="translation_credits">Credits: %1$d</string>
-    <string name="no_translation_credits">No translation credits remaining</string>
+    <string name="translation_on_device">On-device translation</string>
     <string name="offline_languages">Offline Languages</string>
     <string name="download">Download</string>
     <string name="downloaded">Downloaded</string>
     <string name="hide_bars">Hide navigation bars</string>
     <string name="show_bars">Show navigation bars</string>
     <string name="offline_language_models">Offline Language Models</string>
-    <string name="offline_model_not_downloaded">Offline translation models are not downloaded. Please download them in Settings to use offline translation.</string>
+    <string name="offline_model_not_downloaded">The Google ML Kit model is not downloaded. Connect to Wi-Fi and download it in Settings.</string>
     <string name="download_in_progress">Downloading model...</string>
     <string name="model_download_success">Model downloaded successfully</string>
     <string name="model_download_failed">Failed to download model</string>
     <string name="open_settings">Open Settings</string>
     <string name="translating_offline">Translating offline...</string>
+    <string name="terms">Terms of Use (Draft)</string>
+    <string name="privacy">Privacy Policy (Draft)</string>
+    <string name="terms_title">Terms of Use (Draft)</string>
+    <string name="privacy_title">Privacy Policy (Draft)</string>
+    <string name="about_text">Translated with Google
+
+Machine translation. Not official.
+
+Machine translation on-device with Google ML Kit. Accuracy is not guaranteed.
+Not an official or human translation.</string>
+    <string name="terms_draft">TERMS OF USE - DRAFT - DEVELOPER REVIEW REQUIRED. This app reads EPUB files chosen on the device. There is no book catalog and no distribution of books or translations. Use only files you have the legal right to use. Translation is on-device machine translation for personal on-screen display only and is not an official edition. Do not share, export, publish, or distribute translated text. Sharing, where available, is limited to the original imported file. You are responsible for the files you open. Translation quality is not guaranteed.</string>
+    <string name="privacy_draft">PRIVACY POLICY - DRAFT. Translation runs on-device with Google ML Kit. Book text is not uploaded to the developer server for translation. ML Kit may send performance or usage metrics to Google, not book content to the developer. Books and translations stay on the device. Android share sends a file only to the destination you choose.</string>
+    <string name="translation_consent_message">I will only translate files I have the right to use, for personal on-screen use.</string>
+    <string name="translation_consent_title">Before translating</string>
+    <string name="translation_consent_accept">I agree</string>
 </resources>
 

@@ -17,7 +17,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var languageManager: LanguageManager
-    private lateinit var yandexOfflineManager: YandexOfflineManager
+    private lateinit var mlKitOfflineManager: MlKitOfflineManager
     private lateinit var languageAdapter: LanguageAdapter
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
@@ -28,7 +28,7 @@ class SettingsActivity : AppCompatActivity() {
 
         // Initialize managers
         languageManager = LanguageManager(this)
-        yandexOfflineManager = YandexOfflineManager(this)
+        mlKitOfflineManager = MlKitOfflineManager(this)
 
         // Set up the language spinner
         setupLanguageSpinner()
@@ -67,7 +67,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupOfflineLanguagesRecyclerView() {
-        val offlineLanguages = yandexOfflineManager.getSupportedLanguages()
+        val offlineLanguages = mlKitOfflineManager.getSupportedLanguages()
 
         languageAdapter = LanguageAdapter(
             offlineLanguages,
@@ -84,7 +84,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun downloadLanguage(language: com.example.epubtranslator.translation.OfflineLanguage) {
-        yandexOfflineManager.downloadLanguage(
+        mlKitOfflineManager.downloadLanguage(
             language,
             progressCallback = { progress ->
                 languageAdapter.updateDownloadProgress(language.code, progress)
@@ -103,7 +103,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun deleteLanguage(language: com.example.epubtranslator.translation.OfflineLanguage) {
-        yandexOfflineManager.deleteLanguage(
+        mlKitOfflineManager.deleteLanguage(
             language,
             completionCallback = { success ->
                 if (success) {
@@ -119,7 +119,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun refreshOfflineModelStatus() {
         coroutineScope.launch {
             try {
-                val offlineLanguages = yandexOfflineManager.getSupportedLanguages()
+                val offlineLanguages = mlKitOfflineManager.getSupportedLanguages()
                 for (language in offlineLanguages) {
                     languageAdapter.updateDownloadState(language.code, false, language.isDownloaded)
                 }
@@ -145,6 +145,6 @@ class SettingsActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         coroutineScope.cancel()
-        yandexOfflineManager.onDestroy()
+        mlKitOfflineManager.onDestroy()
     }
 }

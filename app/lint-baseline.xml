@@ -1127,15 +1127,5 @@
             column="9"/>
     </issue>
 
-    <issue
-        id="HardcodedText"
-        message="Hardcoded string &quot;🔤 Yandex App (Offline)&quot;, should use `@string` resource"
-        errorLine1="        android:text=&quot;🔤 Yandex App (Offline)&quot;"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/paragraph_popup_menu.xml"
-            line="54"
-            column="9"/>
-    </issue>
 
 </issues>

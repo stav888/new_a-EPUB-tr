@@ -2,7 +2,6 @@ package com.example.epubtranslator.translation
 
 import android.content.Context
 import android.util.Log
-import com.example.epubtranslator.util.NetworkMonitor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -24,7 +23,6 @@ class TranslationManager(private val context: Context) {
         private const val TAG = "TranslationManager"
     }
 
-    private val translationService = TranslationService()
     private val mlKitService = MlKitTranslationService()
     private val languageManager = LanguageManager(context)
 
@@ -36,13 +34,10 @@ class TranslationManager(private val context: Context) {
      * Set the translation API to use
      */
     fun setTranslationApi(api: TranslationApi) {
-        translationService.setTranslationApi(api)
-
-        // Save the selection to preferences
         val prefs = context.getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
-        prefs.edit().putString(PREF_TRANSLATION_API, api.name).apply()
+        prefs.edit().putString(PREF_TRANSLATION_API, TranslationApi.ML_KIT.name).apply()
 
-        Log.d(TAG, "Translation API set to: $api")
+        Log.d(TAG, "In-app translation engine is Google ML Kit")
     }
 
     /**
@@ -51,15 +46,7 @@ class TranslationManager(private val context: Context) {
     fun getCurrentApi(): TranslationApi {
         // Get the saved API from preferences, or use the default
         val prefs = context.getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
-        val apiName = prefs.getString(PREF_TRANSLATION_API, TranslationApi.getDefault().name)
-
-        // Convert the name to an enum value
-        val api = TranslationApi.fromString(apiName ?: TranslationApi.getDefault().name)
-
-        // Make sure the service is using the same API
-        translationService.setTranslationApi(api)
-
-        return api
+        return TranslationApi.ML_KIT
     }
 
     /**
@@ -110,50 +97,10 @@ class TranslationManager(private val context: Context) {
                 }.joinToString("\\n")
             }
 
-            // Check if online
-            val isOnline = NetworkMonitor.isOnline(context)
-            Log.d(TAG, "Network status: ${if (isOnline) "ONLINE" else "OFFLINE"}")
-
-            if (isOnline) {
-                // Use online translation
-                val result = translationService.translateText(translationInput, targetLanguage.code)
-                result.map { translatedText -> restoreBulletMarkers(translatedText) }.also { translatedResult ->
-                    translatedResult.fold(
-                    onSuccess = { translatedText ->
-                        Log.d("TranslationManager", "Online translation successful: ${translatedText.take(50)}...")
-                    },
-                    onFailure = { error ->
-                        Log.e("TranslationManager", "Online translation failed: ${error.message}")
-                    }
-                    )
-                }
-            } else {
-                // Try offline translation
-                Log.d(TAG, "Attempting offline translation")
-                // Detect source language from text
-                val sourceLanguageCode = translationService.detectLanguagePublic(translationInput)
-                val sourceLanguage = Language.fromCode(sourceLanguageCode)
-
-                // Check if models are downloaded
-                val modelsDownloaded = mlKitService.areModelsDownloaded(
-                    sourceLanguage.mlKitCode,
-                    targetLanguage.mlKitCode
-                )
-
-                if (!modelsDownloaded) {
-                    Log.w(TAG, "Offline models not downloaded: ${sourceLanguage.code} -> ${targetLanguage.code}")
-                    return@withContext Result.failure(
-                        ModelNotDownloadedException(
-                            "Offline translation models not downloaded. Please download models in Settings.",
-                            sourceLanguage,
-                            targetLanguage
-                        )
-                    )
-                }
-
-                mlKitService.translateText(translationInput, sourceLanguage.mlKitCode, targetLanguage.mlKitCode)
-                    .map { translatedText -> restoreBulletMarkers(translatedText) }
-            }
+            val sourceLanguageCode = detectLanguage(translationInput)
+            val sourceLanguage = Language.fromCode(sourceLanguageCode)
+            mlKitService.translateText(translationInput, sourceLanguage.mlKitCode, targetLanguage.mlKitCode)
+                .map { translatedText -> restoreBulletMarkers(translatedText) }
         } catch (e: ModelNotDownloadedException) {
             Log.e(TAG, "Model not downloaded: ${e.message}")
             Result.failure(e)
@@ -175,7 +122,9 @@ class TranslationManager(private val context: Context) {
      * Expose language detection for UI logic (e.g., block same-language translation)
      */
     fun detectLanguage(text: String): String {
-        return translationService.detectLanguagePublic(text)
+        val hebrewCount = text.count { it in '\u0590'..'\u05FF' || it in '\uFB1D'..'\uFB4F' }
+        val latinCount = text.count { it in 'a'..'z' || it in 'A'..'Z' }
+        return if (hebrewCount > latinCount) "he" else "en"
     }
 
     /**

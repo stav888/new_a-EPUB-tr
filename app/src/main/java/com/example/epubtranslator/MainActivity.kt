@@ -31,7 +31,6 @@ import com.example.epubtranslator.adapter.RecentBooksAdapter
 import com.example.epubtranslator.data.RecentBook
 import com.example.epubtranslator.data.RecentBooksManager
 import com.example.epubtranslator.databinding.ActivityMainBinding
-import com.example.epubtranslator.translation.TranslationApi
 import com.example.epubtranslator.translation.TranslationManager
 import com.example.epubtranslator.util.ThumbnailGenerator
 import com.google.android.material.navigation.NavigationView
@@ -97,9 +96,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         thumbnailGenerator = ThumbnailGenerator(this)
         translationManager = TranslationManager(this)
 
-        // Set up API selection dropdown
-        setupApiSelector()
-
         // Set up version information
         setupVersionInfo()
 
@@ -123,56 +119,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         // Set up back pressed callback
         setupBackPressedCallback()
-    }
-
-    /**
-     * Set up the API selection dropdown
-     */
-    private fun setupApiSelector() {
-        // Get the spinner from the layout
-        val apiSpinner: Spinner = binding.apiSelector
-
-        // Create an array adapter with the API options
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            arrayOf(getString(R.string.google_api), getString(R.string.yandex_api))
-        )
-
-        // Set the dropdown layout style
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-
-        // Apply the adapter to the spinner
-        apiSpinner.adapter = adapter
-
-        // Set the current API as the selected item
-        val currentApi = translationManager.getCurrentApi()
-        apiSpinner.setSelection(if (currentApi == TranslationApi.GOOGLE) 0 else 1)
-
-        // Set a listener for API selection changes
-        apiSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                // Convert position to API enum
-                val selectedApi = if (position == 0) TranslationApi.GOOGLE else TranslationApi.YANDEX
-
-                // Only update if the API has changed
-                if (selectedApi != translationManager.getCurrentApi()) {
-                    // Update the translation manager with the selected API
-                    translationManager.setTranslationApi(selectedApi)
-
-                    // Show a toast to confirm the change
-                    Toast.makeText(
-                        this@MainActivity,
-                        getString(R.string.api_changed, getString(if (selectedApi == TranslationApi.GOOGLE) R.string.google_api else R.string.yandex_api)),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Do nothing
-            }
-        }
     }
 
     /**
@@ -661,50 +607,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 startActivity(intent)
             }
             R.id.nav_about -> {
-                // Show an about dialog
-                showAboutDialog()
+                startActivity(Intent(this, LegalInfoActivity::class.java).putExtra(LegalInfoActivity.EXTRA_PAGE, LegalInfoActivity.PAGE_ABOUT))
+            }
+            R.id.nav_terms -> {
+                startActivity(Intent(this, LegalInfoActivity::class.java).putExtra(LegalInfoActivity.EXTRA_PAGE, LegalInfoActivity.PAGE_TERMS))
+            }
+            R.id.nav_privacy -> {
+                startActivity(Intent(this, LegalInfoActivity::class.java).putExtra(LegalInfoActivity.EXTRA_PAGE, LegalInfoActivity.PAGE_PRIVACY))
             }
         }
 
         binding.drawerLayout.closeDrawer(GravityCompat.START)
         return true
-    }
-
-    private fun showAboutDialog() {
-        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-        builder.setTitle(R.string.about)
-
-        // Get version information (already contains "build X" format)
-        val versionInfo = try {
-            val packageInfo = packageManager.getPackageInfo(packageName, 0)
-            packageInfo.versionName ?: "1.5.28 build 4"
-        } catch (e: Exception) {
-            "1.5.28 build 4"
-        }
-
-        val aboutMessage = """
-            EPUB Reader with Translation
-
-            $versionInfo
-
-            Features:
-            • EPUB reading with page navigation
-            • Double-tap paragraphs for translation
-            • Persistent translation storage
-            • Dark/Light theme support
-            • Font size adjustment
-            • Recent books management
-
-            Translation Services:
-            • Google Translate
-            • Yandex Translate
-
-            Built with ❤️ for book lovers
-        """.trimIndent()
-
-        builder.setMessage(aboutMessage)
-        builder.setPositiveButton("OK", null)
-        builder.show()
     }
 
     private fun openFilePicker() {

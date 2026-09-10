@@ -2,16 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Internet permission for translation API -->
+    <!-- Required only for optional ML Kit model downloads. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Storage permissions for accessing EPUB files -->
-    <!-- Legacy permissions for Android 12 and below -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <!-- Modern permissions for Android 13+ -->
-    <uses-permission android:name="android.permission.READ_MEDIA_DOCUMENTS" />
-    <!-- Permissions for cloud sync and advanced features -->
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
@@ -73,6 +65,11 @@
         <activity
             android:name=".SettingsActivity"
             android:label="@string/settings_title"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".LegalInfoActivity"
+            android:label="@string/about"
             android:parentActivityName=".MainActivity" />
 
         <activity

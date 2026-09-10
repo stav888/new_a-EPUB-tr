@@ -33,6 +33,7 @@ bin/
 
 # Local API credentials and secrets (DO NOT COMMIT)
 local.properties
+.idea/
 .env
 *.key
 *.pem

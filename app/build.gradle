@@ -6,7 +6,7 @@ plugins {
 
 def versionPropsFile = rootProject.file("version.properties")
 
-if (!project.hasProperty('disableAutoVersionBump') && versionPropsFile.exists()) {
+if (project.findProperty('bumpVersion') == 'true' && versionPropsFile.exists()) {
     def props = new Properties()
     versionPropsFile.withInputStream { props.load(it) }
     try {
@@ -38,11 +38,6 @@ def buildNumber = versionProps['BUILD_NUMBER'] ?: '1'
 def computedVersionName = "${major}.${minor}.${patch} build ${buildNumber}"
 def computedVersionCode = (versionProps['VERSION_CODE'] ?: '44').toInteger()
 
-// API credentials - Replace with your actual RapidAPI key
-// DO NOT commit real API keys! Set in local.properties or environment variable instead
-def rapidApiKey = System.getenv('RAPIDAPI_KEY') ?: 'MISSING_API_KEY_SET_ENVIRONMENT_VARIABLE'
-def rapidApiHost = 'microsoft-translator-text.p.rapidapi.com'
-
 android {
     namespace "com.example.epubtranslator"
     compileSdkVersion 34
@@ -58,14 +53,11 @@ android {
         debug {
             debuggable true
             minifyEnabled false
-            buildConfigField "String", "RAPIDAPI_KEY", "\"${rapidApiKey}\""
-            buildConfigField "String", "RAPIDAPI_HOST", "\"${rapidApiHost}\""
         }
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "RAPIDAPI_KEY", "\"${rapidApiKey}\""
-            buildConfigField "String", "RAPIDAPI_HOST", "\"${rapidApiHost}\""
         }
     }
     compileOptions {
@@ -81,28 +73,25 @@ android {
     }
     lint {
         baseline = file("lint-baseline.xml")
-        checkReleaseBuilds false
+        checkReleaseBuilds true
         abortOnError false
     }
     packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
         exclude 'META-INF/LICENSE'
         exclude 'META-INF/LICENSE.txt'
-        exclude 'META-INF/NOTICE'
         exclude 'META-INF/NOTICE.txt'
     }
 }
 
 // NOTE: API Keys Configuration
 // ============================================
-// The RAPIDAPI_KEY and RAPIDAPI_HOST below are SECURITY SENSITIVE
+// Translation does not use remote API credentials.
 // DO NOT commit real API keys to version control!
 //
 // To add your API keys:
-// 1. Get your API key from RapidAPI (https://rapidapi.com/microsoft-azure-org-microsoft-cognitive-services/api/microsoft-translator-text)
-// 2. Replace "your-api-key-here" with your actual RapidAPI key in buildTypes below
-// 3. DO NOT commit this file with real keys
-// 4. If keys are exposed, regenerate them immediately on RapidAPI dashboard
+// ML Kit manages model downloads locally.
+// No translation credentials are required.
 // ============================================
 
 dependencies {
@@ -117,11 +106,8 @@ dependencies {
     // JSoup for HTML parsing
     implementation 'org.jsoup:jsoup:1.17.2'
 
-    // Retrofit for API calls
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+    // Gson for local recent-book persistence
+    implementation 'com.google.code.gson:gson:2.10.1'
 
     // Coroutines for asynchronous programming
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'

@@ -79,7 +79,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="@string/powered_by_yandex"
+            android:text="@string/powered_by_google"
             android:textSize="12sp"
             android:textStyle="italic" />
 

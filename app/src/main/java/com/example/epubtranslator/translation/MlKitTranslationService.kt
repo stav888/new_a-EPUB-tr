@@ -41,7 +41,7 @@ class MlKitTranslationService {
         return withContext(Dispatchers.Default) {
             try {
                 val translator = getTranslator(sourceLanguage, targetLanguage)
-                val conditions = DownloadConditions.Builder().build()
+                val conditions = DownloadConditions.Builder().requireWifi().build()
                 translator.downloadModelIfNeeded(conditions).await()
                 true
             } catch (e: Exception) {
@@ -72,7 +72,7 @@ class MlKitTranslationService {
                 onProgress(50)
 
                 // Download the model
-                val conditions = DownloadConditions.Builder().build()
+                val conditions = DownloadConditions.Builder().requireWifi().build()
                 translator.downloadModelIfNeeded(conditions).await()
 
                 // Report 100% progress
@@ -120,6 +120,7 @@ class MlKitTranslationService {
         return withContext(Dispatchers.Default) {
             try {
                 val translator = getTranslator(sourceLanguage, targetLanguage)
+                translator.downloadModelIfNeeded(DownloadConditions.Builder().requireWifi().build()).await()
                 val translatedText = translator.translate(text).await()
                 Log.d(TAG, "Translation successful: ${translatedText.take(50)}...")
                 Result.success(translatedText)

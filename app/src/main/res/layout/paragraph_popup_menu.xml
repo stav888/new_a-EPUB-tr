@@ -30,28 +30,12 @@
         android:background="@color/purple_200"
         android:layout_marginVertical="4dp" />
 
-    <!-- Google Translate Option -->
+    <!-- On-device translation option -->
     <TextView
         android:id="@+id/googleTranslateButton"
         android:layout_width="200dp"
         android:layout_height="48dp"
-        android:text="🌐 Google Translate"
-        android:textSize="16sp"
-        android:textColor="@color/black"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:drawablePadding="12dp" />
-
-    <!-- Yandex Translate Option -->
-    <TextView
-        android:id="@+id/yandexTranslateButton"
-        android:layout_width="200dp"
-        android:layout_height="48dp"
-        android:text="🔤 Yandex App (Offline)"
+        android:text="Translate on device"
         android:textSize="16sp"
         android:textColor="@color/black"
         android:gravity="center_vertical"

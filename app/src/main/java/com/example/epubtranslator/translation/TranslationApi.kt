@@ -2,18 +2,15 @@ package com.example.epubtranslator.translation
 
 import com.example.epubtranslator.R
 
-/**
- * Enum representing the available translation APIs
- */
+/** The only in-app translation engine. */
 enum class TranslationApi(val displayNameResId: Int) {
-    GOOGLE(R.string.google_api),
-    YANDEX(R.string.yandex_api);
+    ML_KIT(R.string.ml_kit_translation);
 
     companion object {
         /**
          * Get the default translation API
          */
-        fun getDefault(): TranslationApi = GOOGLE
+        fun getDefault(): TranslationApi = ML_KIT
 
         /**
          * Get the translation API by name

@@ -91,15 +91,9 @@ class EpubReaderActivity : AppCompatActivity() {
     private var restoringNavigationHistory = false
     private var pendingAnchor: String? = null
     private var pendingScrollPosition: Int? = null
-    private var creditsCodeDialogShown = false
-
     // Translation synchronization to prevent race conditions
     private val translationLock = Any()
     private val pendingTranslations = mutableSetOf<String>()
-    private val creditsPreferences by lazy {
-        getSharedPreferences("translation_credits", Context.MODE_PRIVATE)
-    }
-    private var translationCredits = 100
 
     // Activity Result Launcher for search
     private val searchActivityLauncher = registerForActivityResult(
@@ -125,80 +119,11 @@ class EpubReaderActivity : AppCompatActivity() {
         }
     }
 
-    // Activity Result Launcher for translation
-    private var pendingExternalTranslationParagraphId: String? = null
-
-    private val translationLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val returnedParagraphId = result.data?.getStringExtra("paragraph_id")
-            ?: pendingExternalTranslationParagraphId
-        var translationSucceeded = false
-        try {
-            if (result.resultCode == RESULT_OK) {
-                result.data?.let { intent ->
-                val translatedText = intent.getStringExtra(Intent.EXTRA_PROCESS_TEXT)
-                val originalText = intent.getStringExtra("original_text")
-                val paragraphId = intent.getStringExtra("paragraph_id")
-                val translationMethodName = intent.getStringExtra("translation_method")
-
-                if (!translatedText.isNullOrEmpty() && !originalText.isNullOrEmpty()) {
-                    try {
-                        // If we have the paragraph ID, keep Kotlin-side state in sync and use the stable JS API
-                        if (!paragraphId.isNullOrEmpty()) {
-                            val targetLanguage = translationManager.getTargetLanguage().code
-                            synchronized(translationLock) {
-                                val translations = pageTranslations.getOrPut(currentPage) { mutableMapOf() }
-                                val targetLanguages = pageTranslationTargetLanguages.getOrPut(currentPage) { mutableMapOf() }
-                                val translationMethods = pageTranslationMethods.getOrPut(currentPage) { mutableMapOf() }
-                                val visible = pageVisibleTranslations.getOrPut(currentPage) { mutableSetOf() }
-
-                                translations[paragraphId] = translatedText
-                                targetLanguages[paragraphId] = targetLanguage
-
-                                // Store the translation method used
-                                val usedMethod = if (!translationMethodName.isNullOrEmpty()) {
-                                    TranslationMethod.fromString(translationMethodName)
-                                } else {
-                                    TranslationMethod.DEFAULT // Fallback
-                                }
-                                translationMethods[paragraphId] = usedMethod
-
-                                pendingTranslations.remove(paragraphId)
-                            }
-
-                            // Use toggleTranslationVisibility for consistent behavior with all methods
-                            toggleTranslationVisibility(paragraphId, true)
-                            translationSucceeded = true
-
-                            Toast.makeText(this, "Translation received from external app", Toast.LENGTH_SHORT).show()
-                        } else {
-                            // Fallback: try to apply by matching text (less reliable)
-                            displayTranslationInParagraph(originalText, translatedText)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error applying Intent translation result", e)
-                    }
-                }
-            }
-            }
-        } finally {
-            returnedParagraphId?.let { paragraphId ->
-                pendingTranslations.remove(paragraphId)
-                resetElementState(paragraphId, refundCredit = !translationSucceeded)
-            }
-            if (pendingExternalTranslationParagraphId == returnedParagraphId) {
-                pendingExternalTranslationParagraphId = null
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityEpubReaderBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        translationCredits = creditsPreferences.getInt("remaining", 100)
         updateCreditsDisplay()
 
         // Restore bars visibility from savedInstanceState or default to true
@@ -1688,14 +1613,6 @@ class EpubReaderActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
                 val query = s?.toString() ?: ""
-                if (query == "101190") {
-                    if (!creditsCodeDialogShown) {
-                        creditsCodeDialogShown = true
-                        showCreditsUpdateDialog()
-                    }
-                    return
-                }
-                creditsCodeDialogShown = false
                 performInlineSearch(query)
             }
         })
@@ -1710,36 +1627,6 @@ class EpubReaderActivity : AppCompatActivity() {
                 false
             }
         }
-    }
-
-    private fun showCreditsUpdateDialog() {
-        val input = android.widget.EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            hint = "Credits"
-            setText(translationCredits.toString())
-            selectAll()
-        }
-
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Update translation credits")
-            .setView(input)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton("Update") { _, _ ->
-                val updatedCredits = input.text.toString().toIntOrNull()
-                if (updatedCredits != null && updatedCredits >= 0) {
-                    translationCredits = updatedCredits
-                    creditsPreferences.edit().putInt("remaining", translationCredits).apply()
-                    updateCreditsDisplay()
-                    Toast.makeText(this, getString(R.string.translation_credits, translationCredits), Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Enter a valid credit number", Toast.LENGTH_SHORT).show()
-                }
-                binding.inlineSearchEditText.text?.clear()
-            }
-            .setOnDismissListener {
-                creditsCodeDialogShown = false
-            }
-            .show()
     }
 
     /**
@@ -4781,6 +4668,15 @@ class EpubReaderActivity : AppCompatActivity() {
                                         element.style.borderRadius = '4px';
                                         element.style.padding = '4px';
                                         element.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                                        var attributionId = '$paragraphId-translation-attribution';
+                                        var attribution = document.getElementById(attributionId);
+                                        if (!attribution) {
+                                            attribution = document.createElement('div');
+                                            attribution.id = attributionId;
+                                            attribution.textContent = 'Translated with Google';
+                                            attribution.style.cssText = 'font-size:0.75em;color:#666;margin:4px 0 8px;';
+                                            element.parentNode.insertBefore(attribution, element.nextSibling);
+                                        }
 
                                         // Set text direction based on target language
                                         var rtlLangs = ['he','ar','fa','ur'];
@@ -4894,123 +4790,13 @@ class EpubReaderActivity : AppCompatActivity() {
                 }
 
                 popupView.findViewById<LinearLayout>(R.id.googleTranslateButton).setOnClickListener {
-                    // Open in Google Translate app
-                    try {
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, paragraphText)
-                            putExtra("com.google.android.apps.translate.api.EXTRA_FROM_LANGUAGE", "auto")
-                            putExtra("com.google.android.apps.translate.api.EXTRA_TO_LANGUAGE", targetLang)
-                            setPackage("com.google.android.apps.translate")
-                        }
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        // Fallback to web version with explicit target language
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val webIntent = Intent(Intent.ACTION_VIEW,
-                            android.net.Uri.parse("https://translate.google.com/?sl=auto&tl=" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
-                        startActivity(webIntent)
-                    }
-                    popupWindow.dismiss()
-                }
-
-                popupView.findViewById<LinearLayout>(R.id.yandexTranslateButton).setOnClickListener {
-                    // Open in Yandex Translate app
-                    try {
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, paragraphText)
-                            putExtra("ru.yandex.translate.extra.TARGET_LANG", targetLang)
-                            putExtra("TARGET_LANG", targetLang)
-                            setPackage("ru.yandex.translate")
-                        }
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        // Fallback to web version with explicit target language
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val webIntent = Intent(Intent.ACTION_VIEW,
-                            android.net.Uri.parse("https://translate.yandex.com/?lang=auto-" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
-                        startActivity(webIntent)
-                    }
+                    handleDoubleClickTranslation(paragraphId, paragraphText)
                     popupWindow.dismiss()
                 }
 
                 // Right-bubble icons: open translation apps in floating/new-task mode
                 popupView.findViewById<LinearLayout>(R.id.googleTranslateBubble)?.setOnClickListener {
-                    try {
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val intent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_PROCESS_TEXT, paragraphText)
-                            putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
-                            putExtra("com.google.android.apps.translate.api.EXTRA_FROM_LANGUAGE", "auto")
-                            putExtra("com.google.android.apps.translate.api.EXTRA_TO_LANGUAGE", targetLang)
-                            putExtra("original_text", paragraphText)
-                            putExtra("paragraph_id", paragraphId)
-                            setPackage("com.google.android.apps.translate")
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-                        }
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        try {
-                            val targetLang = translationManager.getTargetLanguage().code
-                            val fallback = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, paragraphText)
-                                putExtra("com.google.android.apps.translate.api.EXTRA_FROM_LANGUAGE", "auto")
-                                putExtra("com.google.android.apps.translate.api.EXTRA_TO_LANGUAGE", targetLang)
-                                setPackage("com.google.android.apps.translate")
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-                            }
-                            startActivity(fallback)
-                        } catch (_: Exception) {
-                            // Fallback to web
-                            val targetLang = translationManager.getTargetLanguage().code
-                            val webIntent = Intent(Intent.ACTION_VIEW,
-                                android.net.Uri.parse("https://translate.google.com/?sl=auto&tl=" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
-                            startActivity(webIntent)
-                        }
-                    }
-                    popupWindow.dismiss()
-                }
-
-                popupView.findViewById<LinearLayout>(R.id.yandexTranslateBubble)?.setOnClickListener {
-                    try {
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val intent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_PROCESS_TEXT, paragraphText)
-                            putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
-                            putExtra("ru.yandex.translate.extra.TARGET_LANG", targetLang)
-                            putExtra("TARGET_LANG", targetLang)
-                            putExtra("original_text", paragraphText)
-                            putExtra("paragraph_id", paragraphId)
-                            setPackage("ru.yandex.translate")
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-                        }
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        try {
-                            val targetLang = translationManager.getTargetLanguage().code
-                            val fallback = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, paragraphText)
-                                putExtra("ru.yandex.translate.extra.TARGET_LANG", targetLang)
-                                putExtra("TARGET_LANG", targetLang)
-                                setPackage("ru.yandex.translate")
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-                            }
-                            startActivity(fallback)
-                        } catch (_: Exception) {
-                            // Fallback to web
-                            val targetLang = translationManager.getTargetLanguage().code
-                            val webIntent = Intent(Intent.ACTION_VIEW,
-                                android.net.Uri.parse("https://translate.yandex.com/?lang=auto-" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
-                            startActivity(webIntent)
-                        }
-                    }
+                    handleDoubleClickTranslation(paragraphId, paragraphText)
                     popupWindow.dismiss()
                 }
 
@@ -5131,100 +4917,11 @@ class EpubReaderActivity : AppCompatActivity() {
                     popupWindow.dismiss()
                 }
                 popupView.findViewById<LinearLayout>(R.id.googleTranslateButton).setOnClickListener {
-                    try {
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, paragraphText)
-                            putExtra("com.google.android.apps.translate.api.EXTRA_FROM_LANGUAGE", "auto")
-                            putExtra("com.google.android.apps.translate.api.EXTRA_TO_LANGUAGE", targetLang)
-                            setPackage("com.google.android.apps.translate")
-                        }
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://translate.google.com/?sl=auto&tl=" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
-                        startActivity(webIntent)
-                    }
-                    popupWindow.dismiss()
-                }
-                popupView.findViewById<LinearLayout>(R.id.yandexTranslateButton).setOnClickListener {
-                    try {
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, paragraphText)
-                            putExtra("ru.yandex.translate.extra.TARGET_LANG", targetLang)
-                            putExtra("TARGET_LANG", targetLang)
-                            setPackage("ru.yandex.translate")
-                        }
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://translate.yandex.com/?lang=auto-" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
-                        startActivity(webIntent)
-                    }
+                    handleDoubleClickTranslation(paragraphId, paragraphText)
                     popupWindow.dismiss()
                 }
                 popupView.findViewById<LinearLayout>(R.id.googleTranslateBubble)?.setOnClickListener {
-                    try {
-                        val targetLang = translationManager.getTargetLanguage().code
-                        val intent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_PROCESS_TEXT, paragraphText)
-                            putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
-                            putExtra("com.google.android.apps.translate.api.EXTRA_FROM_LANGUAGE", "auto")
-                            putExtra("com.google.android.apps.translate.api.EXTRA_TO_LANGUAGE", targetLang)
-                            putExtra("original_text", paragraphText)
-                            putExtra("paragraph_id", paragraphId)
-                            setPackage("com.google.android.apps.translate")
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-                        }
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        try {
-                            val targetLang = translationManager.getTargetLanguage().code
-                            val fallback = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, paragraphText)
-                                putExtra("com.google.android.apps.translate.api.EXTRA_FROM_LANGUAGE", "auto")
-                                putExtra("com.google.android.apps.translate.api.EXTRA_TO_LANGUAGE", targetLang)
-                                setPackage("com.google.android.apps.translate")
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-                            }
-                            startActivity(fallback)
-                        } catch (_: Exception) {
-                            val targetLang = translationManager.getTargetLanguage().code
-                            val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://translate.google.com/?sl=auto&tl=" + targetLang + "&text=" + android.net.Uri.encode(paragraphText)))
-                            startActivity(webIntent)
-                        }
-                    }
-                    popupWindow.dismiss()
-                }
-                popupView.findViewById<LinearLayout>(R.id.yandexTranslateBubble)?.setOnClickListener {
-                    try {
-                        val intent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_PROCESS_TEXT, paragraphText)
-                            putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
-                            setPackage("ru.yandex.translate")
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-                        }
-                        startActivity(intent)
-                    } catch (e: Exception) {
-                        try {
-                            val fallback = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, paragraphText)
-                                setPackage("ru.yandex.translate")
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-                            }
-                            startActivity(fallback)
-                        } catch (_: Exception) {
-                            val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://translate.yandex.com/?text=${android.net.Uri.encode(paragraphText)}"))
-                            startActivity(webIntent)
-                        }
-                    }
+                    handleDoubleClickTranslation(paragraphId, paragraphText)
                     popupWindow.dismiss()
                 }
 
@@ -5242,26 +4939,7 @@ class EpubReaderActivity : AppCompatActivity() {
      */
     private fun updateCreditsDisplay() {
         if (::binding.isInitialized) {
-            binding.creditsTextView.text = getString(R.string.translation_credits, translationCredits)
-        }
-    }
-
-    private fun consumeTranslationCredit(): Boolean {
-        synchronized(translationLock) {
-            if (translationCredits <= 0) return false
-            translationCredits--
-            creditsPreferences.edit().putInt("remaining", translationCredits).apply()
-            updateCreditsDisplay()
-            return true
-        }
-    }
-
-    private fun refundTranslationCredit() {
-        synchronized(translationLock) {
-            translationCredits++
-            creditsPreferences.edit().putInt("remaining", translationCredits).apply()
-            updateCreditsDisplay()
-            Log.d(TAG, "Translation credit refunded; remaining=$translationCredits")
+            binding.creditsTextView.text = getString(R.string.translation_on_device)
         }
     }
 
@@ -5328,8 +5006,17 @@ class EpubReaderActivity : AppCompatActivity() {
                     currentTranslationMethods?.remove(paragraphId)
                 }
 
-                if (!consumeTranslationCredit()) {
-                    Toast.makeText(this, getString(R.string.no_translation_credits), Toast.LENGTH_SHORT).show()
+                val consentPrefs = getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
+                if (!consentPrefs.getBoolean("rights_consent_accepted", false)) {
+                    androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle(R.string.translation_consent_title)
+                        .setMessage(R.string.translation_consent_message)
+                        .setNegativeButton(R.string.cancel, null)
+                        .setPositiveButton(R.string.translation_consent_accept) { _, _ ->
+                            consentPrefs.edit().putBoolean("rights_consent_accepted", true).apply()
+                            handleDoubleClickTranslation(paragraphId, paragraphText)
+                        }
+                        .show()
                     return
                 }
 
@@ -5442,6 +5129,15 @@ class EpubReaderActivity : AppCompatActivity() {
                             element.style.borderRadius = '4px';
                             element.style.padding = '4px';
                             element.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                            var attributionId = elementId + '-translation-attribution';
+                            var attribution = document.getElementById(attributionId);
+                            if (!attribution) {
+                                attribution = document.createElement('div');
+                                attribution.id = attributionId;
+                                attribution.textContent = 'Translated with Google';
+                                attribution.style.cssText = 'font-size:0.75em;color:#666;margin:4px 0 8px;';
+                                element.parentNode.insertBefore(attribution, element.nextSibling);
+                            }
 
                             // Set text direction based on target language
                             var rtlLangs = ['he','ar','fa','ur'];
@@ -5483,6 +5179,8 @@ class EpubReaderActivity : AppCompatActivity() {
                             element.removeAttribute('data-original-text');
                             element.removeAttribute('data-translated-text');
                             element.removeAttribute('data-target-language');
+                            var attribution = document.getElementById('$paragraphId-translation-attribution');
+                            if (attribution) attribution.remove();
                         } else if (element && element.hasAttribute('data-original-text')) {
                             // Fallback to text-only restoration for backward compatibility
                             element.textContent = element.getAttribute('data-original-text');
@@ -5521,27 +5219,7 @@ class EpubReaderActivity : AppCompatActivity() {
         try {
             Log.d(TAG, "Performing translation for paragraph: $paragraphId")
 
-            // Get current translation method
-            val translationMethod = translationManager.getCurrentMethod()
-            Log.d(TAG, "Using translation method: $translationMethod")
-
-            when (translationMethod) {
-                TranslationMethod.DEFAULT -> {
-                    performDefaultTranslation(paragraphId, paragraphText)
-                }
-                TranslationMethod.GOOGLE_INTENT -> {
-                    performIntentTranslation(paragraphId, paragraphText, "com.google.android.apps.translate", TranslationMethod.GOOGLE_INTENT)
-                }
-                TranslationMethod.YANDEX_INTENT -> {
-                    performIntentTranslation(paragraphId, paragraphText, "ru.yandex.translate", TranslationMethod.YANDEX_INTENT)
-                }
-                TranslationMethod.GOOGLE_API -> {
-                    performGoogleApiTranslation(paragraphId, paragraphText)
-                }
-                TranslationMethod.YANDEX_API -> {
-                    performYandexApiTranslation(paragraphId, paragraphText)
-                }
-            }
+            performDefaultTranslation(paragraphId, paragraphText)
         } catch (e: Exception) {
             Log.e(TAG, "Error in performTranslation", e)
             resetElementState(paragraphId)
@@ -5651,189 +5329,10 @@ class EpubReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * Perform Google API-based translation (G2 method)
-     */
-    private fun performGoogleApiTranslation(paragraphId: String, paragraphText: String) {
-        try {
-            // Get current target language from translation manager
-            val targetLanguage = translationManager.getTargetLanguage().code
-
-            // Temporarily set the translation API to Google
-            val originalApi = translationManager.getCurrentApi()
-            translationManager.setTranslationApi(TranslationApi.GOOGLE)
-
-            // Show loading indicator
-            showLoadingState(paragraphId)
-
-            // Perform translation using the translation manager with Google API
-            CoroutineScope(Dispatchers.Main).launch {
-                try {
-                    Log.d(TAG, "🌐 Calling Google API translation for text: ${paragraphText.take(30)}...")
-                    Log.d(TAG, "🌐 Target language: $targetLanguage")
-
-                    val result = translationManager.translateText(paragraphText)
-                    Log.d(TAG, "🌐 Google API translation returned result")
-
-                    result.fold(
-                        onSuccess = { translatedText ->
-                            synchronized(translationLock) {
-                                try {
-                                    Log.d(TAG, "✅ Google API Translation SUCCESS: ${translatedText.take(30)}...")
-
-                                    if (translatedText.isNotEmpty() && translatedText != paragraphText) {
-                                        // Store the translation
-                                        val translations = pageTranslations.getOrPut(currentPage) { mutableMapOf() }
-                                        val targetLanguages = pageTranslationTargetLanguages.getOrPut(currentPage) { mutableMapOf() }
-                                        val translationMethods = pageTranslationMethods.getOrPut(currentPage) { mutableMapOf() }
-
-                                        translations[paragraphId] = translatedText
-                                        targetLanguages[paragraphId] = targetLanguage
-                                        translationMethods[paragraphId] = TranslationMethod.GOOGLE_API
-
-                                        Log.d(TAG, "💾 Stored Google API translation for paragraph: $paragraphId")
-
-                                        // Show the translation
-                                        toggleTranslationVisibility(paragraphId, true)
-
-                                        Log.d(TAG, "✅ Google API translation completed for paragraph: $paragraphId")
-                                        Toast.makeText(this@EpubReaderActivity, "Google API translation completed", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Log.w(TAG, "⚠️ Google API translation result empty or same as original")
-                                        resetElementState(paragraphId)
-                                        Toast.makeText(this@EpubReaderActivity, "Google API translation failed - empty result", Toast.LENGTH_SHORT).show()
-                                    }
-                                } finally {
-                                    pendingTranslations.remove(paragraphId)
-                                    Log.d(TAG, "🔓 Removed paragraph from pending: $paragraphId")
-                                }
-                            }
-                        },
-                        onFailure = { error ->
-                            synchronized(translationLock) {
-                                try {
-                                    Log.e(TAG, "❌ Google API Translation FAILED: ${error.message}", error)
-                                    resetElementState(paragraphId)
-                                    Toast.makeText(this@EpubReaderActivity, "Google API translation error: ${error.message}", Toast.LENGTH_SHORT).show()
-                                } finally {
-                                    pendingTranslations.remove(paragraphId)
-                                    Log.d(TAG, "🔓 Removed paragraph from pending: $paragraphId")
-                                }
-                            }
-                        }
-                    )
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in Google API translation", e)
-                    resetElementState(paragraphId)
-                    pendingTranslations.remove(paragraphId)
-                    Toast.makeText(this@EpubReaderActivity, "Google API translation error: ${e.message}", Toast.LENGTH_SHORT).show()
-                } finally {
-                    // Restore original API setting
-                    translationManager.setTranslationApi(originalApi)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in performGoogleApiTranslation", e)
-            resetElementState(paragraphId)
-            Toast.makeText(this, "Google API translation error: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * Perform Yandex API-based translation (Y2 method)
-     */
-    private fun performYandexApiTranslation(paragraphId: String, paragraphText: String) {
-        try {
-            // Get current target language from translation manager
-            val targetLanguage = translationManager.getTargetLanguage().code
-
-            // Temporarily set the translation API to Yandex
-            val originalApi = translationManager.getCurrentApi()
-            translationManager.setTranslationApi(TranslationApi.YANDEX)
-
-            // Show loading indicator
-            showLoadingState(paragraphId)
-
-            // Perform translation using the translation manager with Yandex API
-            CoroutineScope(Dispatchers.Main).launch {
-                try {
-                    Log.d(TAG, "🌐 Calling Yandex API translation for text: ${paragraphText.take(30)}...")
-                    Log.d(TAG, "🌐 Target language: $targetLanguage")
-
-                    val result = translationManager.translateText(paragraphText)
-                    Log.d(TAG, "🌐 Yandex API translation returned result")
-
-                    result.fold(
-                        onSuccess = { translatedText ->
-                            synchronized(translationLock) {
-                                try {
-                                    Log.d(TAG, "✅ Yandex API Translation SUCCESS: ${translatedText.take(30)}...")
-
-                                    if (translatedText.isNotEmpty() && translatedText != paragraphText) {
-                                        // Store the translation
-                                        val translations = pageTranslations.getOrPut(currentPage) { mutableMapOf() }
-                                        val targetLanguages = pageTranslationTargetLanguages.getOrPut(currentPage) { mutableMapOf() }
-                                        val translationMethods = pageTranslationMethods.getOrPut(currentPage) { mutableMapOf() }
-
-                                        translations[paragraphId] = translatedText
-                                        targetLanguages[paragraphId] = targetLanguage
-                                        translationMethods[paragraphId] = TranslationMethod.YANDEX_API
-
-                                        Log.d(TAG, "💾 Stored Yandex API translation for paragraph: $paragraphId")
-
-                                        // Show the translation
-                                        toggleTranslationVisibility(paragraphId, true)
-
-                                        Log.d(TAG, "✅ Yandex API translation completed for paragraph: $paragraphId")
-                                        Toast.makeText(this@EpubReaderActivity, "Yandex API translation completed", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Log.w(TAG, "⚠️ Yandex API translation result empty or same as original")
-                                        resetElementState(paragraphId)
-                                        Toast.makeText(this@EpubReaderActivity, "Yandex API translation failed - empty result", Toast.LENGTH_SHORT).show()
-                                    }
-                                } finally {
-                                    pendingTranslations.remove(paragraphId)
-                                    Log.d(TAG, "🔓 Removed paragraph from pending: $paragraphId")
-                                }
-                            }
-                        },
-                        onFailure = { error ->
-                            synchronized(translationLock) {
-                                try {
-                                    Log.e(TAG, "❌ Yandex API Translation FAILED: ${error.message}", error)
-                                    resetElementState(paragraphId)
-                                    Toast.makeText(this@EpubReaderActivity, "Yandex API translation error: ${error.message}", Toast.LENGTH_SHORT).show()
-                                } finally {
-                                    pendingTranslations.remove(paragraphId)
-                                    Log.d(TAG, "🔓 Removed paragraph from pending: $paragraphId")
-                                }
-                            }
-                        }
-                    )
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in Yandex API translation", e)
-                    resetElementState(paragraphId)
-                    pendingTranslations.remove(paragraphId)
-                    Toast.makeText(this@EpubReaderActivity, "Yandex API translation error: ${e.message}", Toast.LENGTH_SHORT).show()
-                } finally {
-                    // Restore original API setting
-                    translationManager.setTranslationApi(originalApi)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in performYandexApiTranslation", e)
-            resetElementState(paragraphId)
-            Toast.makeText(this, "Yandex API translation error: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
      * Reset element visual state (remove loading indicators)
      */
-    private fun resetElementState(paragraphId: String, refundCredit: Boolean = true) {
-        if (refundCredit) {
-            refundTranslationCredit()
-            pendingTranslations.remove(paragraphId)
-        }
+    private fun resetElementState(paragraphId: String) {
+        pendingTranslations.remove(paragraphId)
         val resetJsCode = """
             (function() {
                 try {
@@ -5879,25 +5378,12 @@ class EpubReaderActivity : AppCompatActivity() {
 
         // Set current selection
         val currentMethod = translationManager.getCurrentMethod()
-        when (currentMethod) {
-            TranslationMethod.DEFAULT -> popup.menu.findItem(R.id.translation_method_default)?.isChecked = true
-            TranslationMethod.GOOGLE_INTENT -> popup.menu.findItem(R.id.translation_method_google)?.isChecked = true
-            TranslationMethod.YANDEX_INTENT -> popup.menu.findItem(R.id.translation_method_yandex)?.isChecked = true
-            TranslationMethod.GOOGLE_API, TranslationMethod.YANDEX_API -> Unit
-        }
+        popup.menu.findItem(R.id.translation_method_default)?.isChecked = true
 
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.translation_method_default -> {
                     setTranslationMethod(TranslationMethod.DEFAULT)
-                    true
-                }
-                R.id.translation_method_google -> {
-                    setTranslationMethod(TranslationMethod.GOOGLE_INTENT)
-                    true
-                }
-                R.id.translation_method_yandex -> {
-                    setTranslationMethod(TranslationMethod.YANDEX_INTENT)
                     true
                 }
                 else -> false
@@ -5921,100 +5407,6 @@ class EpubReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * Perform translation using external app via Intent
-     */
-    private fun performIntentTranslation(paragraphId: String, paragraphText: String, packageName: String, method: TranslationMethod) {
-        try {
-            Log.d(TAG, "Performing Intent translation with package: $packageName")
-
-            // Show loading indicator
-            showLoadingState(paragraphId)
-
-            val targetLang = translationManager.getTargetLanguage().code
-
-            // Try ACTION_PROCESS_TEXT first (preferred method)
-            try {
-                val intent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_PROCESS_TEXT, paragraphText)
-                    putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, false) // Allow editing to get result back
-                    putExtra("original_text", paragraphText) // Pass original text for matching
-                    putExtra("paragraph_id", paragraphId) // Pass paragraph ID
-                    putExtra("translation_method", method.name) // Pass translation method
-                    // Hint target language to external apps (best-effort)
-                    when (packageName) {
-                        "com.google.android.apps.translate" -> {
-                            putExtra("com.google.android.apps.translate.api.EXTRA_FROM_LANGUAGE", "auto")
-                            putExtra("com.google.android.apps.translate.api.EXTRA_TO_LANGUAGE", targetLang)
-                        }
-                        "ru.yandex.translate" -> {
-                            putExtra("ru.yandex.translate.extra.TARGET_LANG", targetLang)
-                            putExtra("TARGET_LANG", targetLang)
-                        }
-                    }
-                    setPackage(packageName)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-
-                // Launch with result
-                pendingExternalTranslationParagraphId = paragraphId
-                translationLauncher.launch(intent)
-                Log.d(TAG, "Launched Intent translation with ACTION_PROCESS_TEXT")
-
-            } catch (e: Exception) {
-                Log.w(TAG, "ACTION_PROCESS_TEXT failed, trying ACTION_SEND", e)
-
-                // Fallback to ACTION_SEND
-                try {
-                    val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, paragraphText)
-                        when (packageName) {
-                            "com.google.android.apps.translate" -> {
-                                putExtra("com.google.android.apps.translate.api.EXTRA_FROM_LANGUAGE", "auto")
-                                putExtra("com.google.android.apps.translate.api.EXTRA_TO_LANGUAGE", targetLang)
-                            }
-                            "ru.yandex.translate" -> {
-                                putExtra("ru.yandex.translate.extra.TARGET_LANG", targetLang)
-                                putExtra("TARGET_LANG", targetLang)
-                            }
-                        }
-                        setPackage(packageName)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-
-                    startActivity(fallbackIntent)
-                    resetElementState(paragraphId) // Remove loading state since we won't get result back
-                    Toast.makeText(this, "Opened in external app (no result expected)", Toast.LENGTH_SHORT).show()
-
-                } catch (e2: Exception) {
-                    Log.e(TAG, "Both Intent methods failed", e2)
-
-                    // Final fallback to web version with explicit target language
-                    val encoded = android.net.Uri.encode(paragraphText)
-                    val webUrl = when (packageName) {
-                        "com.google.android.apps.translate" ->
-                            "https://translate.google.com/?sl=auto&tl=$targetLang&text=$encoded"
-                        "ru.yandex.translate" ->
-                            "https://translate.yandex.com/?lang=auto-$targetLang&text=$encoded"
-                        else -> "https://translate.google.com/?sl=auto&tl=$targetLang&text=$encoded"
-                    }
-
-                    val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUrl))
-                    startActivity(webIntent)
-                    resetElementState(paragraphId)
-                    Toast.makeText(this, "Opened in web browser", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in performIntentTranslation", e)
-            resetElementState(paragraphId)
-            Toast.makeText(this, "Translation error: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
      * Show loading state for a paragraph
      */
     private fun showLoadingState(paragraphId: String) {
@@ -6035,35 +5427,6 @@ class EpubReaderActivity : AppCompatActivity() {
         """.trimIndent()
 
         binding.webView.evaluateJavascript(loadingJsCode, null)
-    }
-
-    /**
-     * Display translation result in paragraph (for Intent-based translations)
-     */
-    private fun displayTranslationInParagraph(originalText: String, translatedText: String) {
-        // Find the paragraph ID by matching the original text
-        val js = """
-            (function() {
-                const paragraphs = document.querySelectorAll('p[id^="paragraph_"]');
-                for (let p of paragraphs) {
-                    if (p.textContent.trim() === '$originalText'.trim()) {
-                        // Apply translation
-                        p.innerHTML = '$translatedText';
-                        p.style.backgroundColor = '#e8f5e8';
-                        p.style.border = '1px solid #4caf50';
-                        p.style.borderRadius = '4px';
-                        p.style.padding = '8px';
-                        p.setAttribute('data-translated', 'true');
-                        p.setAttribute('data-original', '$originalText');
-                        break;
-                    }
-                }
-            })();
-        """.trimIndent()
-
-        binding.webView.evaluateJavascript(js) { result ->
-            Log.d(TAG, "Translation applied via Intent result: $result")
-        }
     }
 
     /**
