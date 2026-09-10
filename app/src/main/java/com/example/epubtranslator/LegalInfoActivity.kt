@@ -18,8 +18,8 @@ class LegalInfoActivity : AppCompatActivity() {
             else -> getString(R.string.about)
         }
         binding.bodyTextView.text = when (page) {
-            PAGE_TERMS -> getString(R.string.terms_draft)
-            PAGE_PRIVACY -> getString(R.string.privacy_draft)
+            PAGE_TERMS -> getString(R.string.terms_content)
+            PAGE_PRIVACY -> getString(R.string.privacy_content)
             else -> getString(R.string.about_text)
         }
     }

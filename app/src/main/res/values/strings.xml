@@ -18,8 +18,6 @@
     <string name="error_translation">Error translating text</string>
     <string name="no_text_selected">No text selected</string>
     <string name="powered_by_google">Translated with Google</string>
-    <string name="powered_by_libretranslate">Powered by LibreTranslate</string>
-    <string name="powered_by_mymemory">Powered by MyMemory Translation</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="recent_books">Recent Books</string>
@@ -66,18 +64,18 @@
     <string name="model_download_failed">Failed to download model</string>
     <string name="open_settings">Open Settings</string>
     <string name="translating_offline">Translating offline...</string>
-    <string name="terms">Terms of Use (Draft)</string>
-    <string name="privacy">Privacy Policy (Draft)</string>
-    <string name="terms_title">Terms of Use (Draft)</string>
-    <string name="privacy_title">Privacy Policy (Draft)</string>
+    <string name="terms">Terms of Use</string>
+    <string name="privacy">Privacy Policy</string>
+    <string name="terms_title">Terms of Use</string>
+    <string name="privacy_title">Privacy Policy</string>
     <string name="about_text">Translated with Google
 
 Machine translation. Not official.
 
 Machine translation on-device with Google ML Kit. Accuracy is not guaranteed.
 Not an official or human translation.</string>
-    <string name="terms_draft">TERMS OF USE - DRAFT - DEVELOPER REVIEW REQUIRED. This app reads EPUB files chosen on the device. There is no book catalog and no distribution of books or translations. Use only files you have the legal right to use. Translation is on-device machine translation for personal on-screen display only and is not an official edition. Do not share, export, publish, or distribute translated text. Sharing, where available, is limited to the original imported file. You are responsible for the files you open. Translation quality is not guaranteed.</string>
-    <string name="privacy_draft">PRIVACY POLICY - DRAFT. Translation runs on-device with Google ML Kit. Book text is not uploaded to the developer server for translation. ML Kit may send performance or usage metrics to Google, not book content to the developer. Books and translations stay on the device. Android share sends a file only to the destination you choose.</string>
+    <string name="terms_content">TERMS OF USE. This app reads EPUB files chosen on the device. There is no book catalog and no distribution of books or translations. Use only files you have the legal right to use. Translation is on-device machine translation for personal on-screen display only and is not an official edition. Do not share, export, publish, or distribute translated text. Sharing, where available, is limited to the original imported file. You are responsible for the files you open. Translation quality is not guaranteed.</string>
+    <string name="privacy_content">PRIVACY POLICY. Translation runs on-device with Google ML Kit. Book text is not uploaded to the developer server for translation. ML Kit may send performance or usage metrics to Google, not book content to the developer. Books and translations stay on the device. Android share sends a file only to the destination you choose.</string>
     <string name="translation_consent_message">I will only translate files I have the right to use, for personal on-screen use.</string>
     <string name="translation_consent_title">Before translating</string>
     <string name="translation_consent_accept">I agree</string>

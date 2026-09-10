@@ -17,6 +17,7 @@ Reading data, cached translations, and imported EPUBs are stored locally. Sharin
 1. Install Android Studio or use the included Gradle wrapper.
 2. Create `local.properties` with the local Android SDK path.
 3. Build with `gradlew.bat :app:assembleDebug` on Windows or `./gradlew :app:assembleDebug` on macOS/Linux.
+	For an install that automatically increments `BUILD_NUMBER` and `VERSION_CODE`, use `gradlew.bat :app:installDebug`.
 4. Use the app's Settings screen to download only the language models you need, preferably over Wi-Fi.
 
 Users are responsible for importing and translating only EPUB files they have the right to use.
