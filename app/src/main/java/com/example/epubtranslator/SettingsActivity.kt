@@ -1,10 +1,12 @@
 package com.example.epubtranslator
 
+import android.animation.ValueAnimator
+import android.animation.Animator
 import android.os.Bundle
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.epubtranslator.databinding.ActivitySettingsBinding
 import com.example.epubtranslator.translation.Language
 import com.example.epubtranslator.translation.LanguageManager
@@ -18,8 +20,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var languageManager: LanguageManager
     private lateinit var mlKitOfflineManager: MlKitOfflineManager
-    private lateinit var languageAdapter: LanguageAdapter
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private var isInitialisingLanguage = true
+    private var selectedLanguage: Language = Language.ENGLISH
+    private var progressAnimator: ValueAnimator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,16 +37,10 @@ class SettingsActivity : AppCompatActivity() {
         // Set up the language spinner
         setupLanguageSpinner()
 
-        // Set up offline models RecyclerView
-        setupOfflineLanguagesRecyclerView()
-
         // Set up save button
         binding.saveButton.setOnClickListener {
             saveSettings()
         }
-
-        // Refresh offline model status on open
-        refreshOfflineModelStatus()
     }
 
     private fun setupLanguageSpinner() {
@@ -60,80 +58,113 @@ class SettingsActivity : AppCompatActivity() {
 
         // Set the current selected language
         val currentLanguage = languageManager.getTargetLanguage()
+        selectedLanguage = currentLanguage
         val position = languages.indexOfFirst { it.code == currentLanguage.code }
         if (position != -1) {
             binding.languageSpinner.setSelection(position)
         }
-    }
+        binding.languageSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
 
-    private fun setupOfflineLanguagesRecyclerView() {
-        val offlineLanguages = mlKitOfflineManager.getSupportedLanguages()
-
-        languageAdapter = LanguageAdapter(
-            offlineLanguages,
-            onDownloadClick = { language ->
-                downloadLanguage(language)
-            },
-            onDeleteClick = { language ->
-                deleteLanguage(language)
-            }
-        )
-
-        binding.offlineLanguagesRecyclerView.layoutManager = LinearLayoutManager(this)
-        binding.offlineLanguagesRecyclerView.adapter = languageAdapter
-    }
-
-    private fun downloadLanguage(language: com.example.epubtranslator.translation.OfflineLanguage) {
-        mlKitOfflineManager.downloadLanguage(
-            language,
-            progressCallback = { progress ->
-                languageAdapter.updateDownloadProgress(language.code, progress)
-            },
-            completionCallback = { success ->
-                if (success) {
-                    Toast.makeText(this, "Downloaded ${language.name}", Toast.LENGTH_SHORT).show()
-                    languageAdapter.updateDownloadState(language.code, false, true)
+            override fun onItemSelected(
+                parent: android.widget.AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                selectedLanguage = languages[position]
+                if (isInitialisingLanguage) {
+                    isInitialisingLanguage = false
                 } else {
-                    Toast.makeText(this, "Failed to download ${language.name}", Toast.LENGTH_SHORT).show()
-                    languageAdapter.updateDownloadState(language.code, false, false)
+                    selectLanguageForDownload(selectedLanguage)
                 }
             }
-        )
-        languageAdapter.updateDownloadState(language.code, true, false)
+        }
+        binding.languageSpinner.post { refreshSelectedLanguageStatus(selectedLanguage) }
     }
 
-    private fun deleteLanguage(language: com.example.epubtranslator.translation.OfflineLanguage) {
-        mlKitOfflineManager.deleteLanguage(
-            language,
-            completionCallback = { success ->
-                if (success) {
-                    Toast.makeText(this, "Deleted ${language.name}", Toast.LENGTH_SHORT).show()
-                    languageAdapter.updateDownloadState(language.code, false, false)
-                } else {
-                    Toast.makeText(this, "Failed to delete ${language.name}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        )
-    }
+    private fun refreshSelectedLanguageStatus(language: Language) {
+        binding.downloadStatusText.text = getString(R.string.checking_model, language.displayName)
+        binding.downloadProgress.visibility = View.VISIBLE
+        binding.downloadProgress.isIndeterminate = true
+        binding.downloadProgress.progress = 0
+        binding.downloadStatusText.visibility = View.VISIBLE
 
-    private fun refreshOfflineModelStatus() {
         coroutineScope.launch {
-            try {
-                val offlineLanguages = mlKitOfflineManager.getSupportedLanguages()
-                for (language in offlineLanguages) {
-                    languageAdapter.updateDownloadState(language.code, false, language.isDownloaded)
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("SettingsActivity", "Error refreshing offline status", e)
+            val isDownloaded = mlKitOfflineManager.isLanguageDownloaded(language)
+            if (isDownloaded) {
+                showDownloadedState(language)
+            } else {
+                binding.downloadProgress.visibility = View.GONE
+                binding.downloadStatusText.text = getString(R.string.select_target_language_to_download)
             }
         }
     }
 
+    private fun downloadSelectedLanguage(language: Language) {
+        binding.downloadStatusText.text = getString(R.string.download_in_progress_for, language.displayName)
+        binding.downloadProgress.isIndeterminate = false
+        binding.downloadProgress.progress = 0
+        mlKitOfflineManager.downloadLanguage(
+            language,
+            progressCallback = { progress ->
+                runOnUiThread { animateProgressTo(progress.coerceAtMost(90)) }
+            },
+            completionCallback = { success ->
+                if (success) {
+                    animateProgressTo(100) {
+                        showDownloadedState(language)
+                    }
+                } else {
+                    progressAnimator?.cancel()
+                    binding.downloadProgress.visibility = View.GONE
+                    binding.downloadStatusText.text = getString(R.string.model_download_failed)
+                }
+            }
+        )
+    }
+
+    private fun selectLanguageForDownload(language: Language) {
+        binding.downloadStatusText.text = getString(R.string.checking_model, language.displayName)
+        binding.downloadProgress.visibility = View.VISIBLE
+        binding.downloadProgress.isIndeterminate = true
+
+        coroutineScope.launch {
+            if (mlKitOfflineManager.isLanguageDownloaded(language)) {
+                showDownloadedState(language)
+            } else {
+                downloadSelectedLanguage(language)
+            }
+        }
+    }
+
+    private fun animateProgressTo(target: Int, onComplete: (() -> Unit)? = null) {
+        progressAnimator?.cancel()
+        val start = binding.downloadProgress.progress
+        progressAnimator = ValueAnimator.ofInt(start, target).apply {
+            duration = if (target >= 100) 450L else 1200L
+            addUpdateListener { animator ->
+                binding.downloadProgress.progress = animator.animatedValue as Int
+            }
+            addListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(animation: Animator) = Unit
+                override fun onAnimationCancel(animation: Animator) = Unit
+                override fun onAnimationRepeat(animation: Animator) = Unit
+                override fun onAnimationEnd(animation: Animator) {
+                    onComplete?.invoke()
+                }
+            })
+            start()
+        }
+    }
+
+    private fun showDownloadedState(language: Language) {
+        binding.downloadProgress.visibility = View.GONE
+        binding.downloadStatusText.text = getString(R.string.model_downloaded_for, language.displayName)
+    }
+
     private fun saveSettings() {
         // Get the selected language
-        val selectedPosition = binding.languageSpinner.selectedItemPosition
-        val selectedLanguage = Language.values()[selectedPosition]
-
         // Save the selected language
         languageManager.setTargetLanguage(selectedLanguage)
 
@@ -145,6 +176,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         coroutineScope.cancel()
+        progressAnimator?.cancel()
         mlKitOfflineManager.onDestroy()
     }
 }

@@ -6,7 +6,8 @@ plugins {
 
 def versionPropsFile = rootProject.file("version.properties")
 def installTaskRequested = gradle.startParameter.taskNames.any { taskName ->
-    taskName.endsWith("installDebug") || taskName.endsWith("installRelease")
+    taskName.endsWith("installDebug") || taskName.endsWith("installRelease") ||
+            taskName.endsWith("installDebugViaAdb")
 }
 def shouldBumpVersion = !project.hasProperty('disableAutoVersionBump') &&
         (project.findProperty('bumpVersion') == 'true' || installTaskRequested)
@@ -159,5 +160,11 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
+
+tasks.register("installDebugViaAdb", Exec) {
+    dependsOn("assembleDebug")
+    workingDir(rootProject.projectDir)
+    commandLine("adb", "install", "-r", file("build/outputs/apk/debug/app-debug.apk").absolutePath)
 }
 

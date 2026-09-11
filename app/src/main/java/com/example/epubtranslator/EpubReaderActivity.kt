@@ -30,9 +30,9 @@ import java.io.File
 import com.example.epubtranslator.data.BookPositionManager
 import com.example.epubtranslator.databinding.ActivityEpubReaderBinding
 import com.example.epubtranslator.translation.TranslationApi
-import com.example.epubtranslator.translation.TranslationDialog
 import com.example.epubtranslator.translation.TranslationManager
 import com.example.epubtranslator.translation.TranslationMethod
+import com.example.epubtranslator.translation.ModelNotDownloadedException
 import android.widget.PopupMenu
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -124,7 +124,6 @@ class EpubReaderActivity : AppCompatActivity() {
         binding = ActivityEpubReaderBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        updateCreditsDisplay()
 
         // Restore bars visibility from savedInstanceState or default to true
         barsVisible = savedInstanceState?.getBoolean("barsVisible", true) ?: true
@@ -164,6 +163,17 @@ class EpubReaderActivity : AppCompatActivity() {
 
         // Set up translation method dropdown
         setupTranslationMethodDropdown()
+
+        binding.creditsTextView.setOnClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.translation_credits)
+                .setMessage(R.string.translation_credits_info)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }
+        val savedCredits = getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
+            .getInt("translation_credits", 200)
+        updateCreditsDisplay(savedCredits)
 
         // Set book title in header (prefer metadata title; fallback to filename)
         epubFilePath?.let { path ->
@@ -4140,10 +4150,81 @@ class EpubReaderActivity : AppCompatActivity() {
     /**
      * Show translation dialog
      */
-    private fun showTranslationDialog(text: String, service: String = "default") {
-        // For now, use the default translation manager regardless of service
-        // In the future, this could be extended to use different translation services
-        TranslationDialog(this, text, translationManager).show()
+    private fun setupTranslationPopupActions(
+        popupView: View,
+        popupWindow: android.widget.PopupWindow,
+        paragraphId: String,
+        paragraphText: String
+    ) {
+        popupView.findViewById<View>(R.id.googleTranslateButton).setOnClickListener {
+            openExternalTranslationApp(paragraphText, "com.google.android.apps.translate")
+            popupWindow.dismiss()
+        }
+        popupView.findViewById<View>(R.id.yandexTranslateButton).setOnClickListener {
+            openExternalTranslationApp(paragraphText, "ru.yandex.translate")
+            popupWindow.dismiss()
+        }
+        popupView.findViewById<View>(R.id.googleTranslateBubble).setOnClickListener {
+            openExternalTranslationBubble(paragraphText, paragraphId, "com.google.android.apps.translate")
+            popupWindow.dismiss()
+        }
+        popupView.findViewById<View>(R.id.yandexTranslateBubble).setOnClickListener {
+            openExternalTranslationBubble(paragraphText, paragraphId, "ru.yandex.translate")
+            popupWindow.dismiss()
+        }
+    }
+
+    private fun openExternalTranslationBubble(
+        paragraphText: String,
+        paragraphId: String,
+        packageName: String
+    ) {
+        try {
+            val targetLanguage = translationManager.getTargetLanguage().code
+            val intent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_PROCESS_TEXT, paragraphText)
+                putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
+                putExtra("original_text", paragraphText)
+                putExtra("paragraph_id", paragraphId)
+                if (packageName == "com.google.android.apps.translate") {
+                    putExtra("com.google.android.apps.translate.api.EXTRA_FROM_LANGUAGE", "auto")
+                    putExtra("com.google.android.apps.translate.api.EXTRA_TO_LANGUAGE", targetLanguage)
+                } else {
+                    putExtra("ru.yandex.translate.extra.TARGET_LANG", targetLanguage)
+                    putExtra("TARGET_LANG", targetLanguage)
+                }
+                setPackage(packageName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+            }
+            startActivity(intent)
+        } catch (_: Exception) {
+            openExternalTranslationApp(paragraphText, packageName)
+        }
+    }
+
+    private fun consumeTranslationCredit(): Boolean {
+        val preferences = getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
+        val credits = preferences.getInt("translation_credits", 200)
+        if (credits <= 0) {
+            Toast.makeText(this, "No translation credits remaining", Toast.LENGTH_SHORT).show()
+            return false
+        }
+
+        preferences.edit().putInt("translation_credits", credits - 1).apply()
+        updateCreditsDisplay(credits - 1)
+        return true
+    }
+
+    private fun refundTranslationCredit() {
+        val preferences = getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
+        val credits = preferences.getInt("translation_credits", 200) + 1
+        preferences.edit().putInt("translation_credits", credits).apply()
+        updateCreditsDisplay(credits)
+    }
+
+    private fun updateCreditsDisplay(credits: Int) {
+        binding.creditsTextView.text = getString(R.string.translation_credits_count, credits)
     }
 
     private fun setupBackPressedCallback() {
@@ -4789,16 +4870,7 @@ class EpubReaderActivity : AppCompatActivity() {
                     popupWindow.dismiss()
                 }
 
-                popupView.findViewById<LinearLayout>(R.id.googleTranslateButton).setOnClickListener {
-                    handleDoubleClickTranslation(paragraphId, paragraphText)
-                    popupWindow.dismiss()
-                }
-
-                // Right-bubble icons: open translation apps in floating/new-task mode
-                popupView.findViewById<LinearLayout>(R.id.googleTranslateBubble)?.setOnClickListener {
-                    handleDoubleClickTranslation(paragraphId, paragraphText)
-                    popupWindow.dismiss()
-                }
+                setupTranslationPopupActions(popupView, popupWindow, paragraphId, paragraphText)
 
                 // Configure popup window appearance
                 popupWindow.elevation = 12f
@@ -4916,14 +4988,7 @@ class EpubReaderActivity : AppCompatActivity() {
                     Toast.makeText(this, "Text copied to clipboard", Toast.LENGTH_SHORT).show()
                     popupWindow.dismiss()
                 }
-                popupView.findViewById<LinearLayout>(R.id.googleTranslateButton).setOnClickListener {
-                    handleDoubleClickTranslation(paragraphId, paragraphText)
-                    popupWindow.dismiss()
-                }
-                popupView.findViewById<LinearLayout>(R.id.googleTranslateBubble)?.setOnClickListener {
-                    handleDoubleClickTranslation(paragraphId, paragraphText)
-                    popupWindow.dismiss()
-                }
+                setupTranslationPopupActions(popupView, popupWindow, paragraphId, paragraphText)
 
                 Log.d(TAG, "SMART popup at ($left,$top) size ${popupWidth}x${popupHeight} fitsAbove=$fitsAbove")
                 popupWindow.showAtLocation(binding.webView, android.view.Gravity.NO_GRAVITY, left, top)
@@ -4937,12 +5002,6 @@ class EpubReaderActivity : AppCompatActivity() {
     /**
      * Handle double-click translation for paragraphs
      */
-    private fun updateCreditsDisplay() {
-        if (::binding.isInitialized) {
-            binding.creditsTextView.text = getString(R.string.translation_on_device)
-        }
-    }
-
     private fun handleDoubleClickTranslation(paragraphId: String, paragraphText: String) {
         synchronized(translationLock) {
             try {
@@ -5021,6 +5080,10 @@ class EpubReaderActivity : AppCompatActivity() {
                 }
 
                 pendingTranslations.add(paragraphId)
+                if (!consumeTranslationCredit()) {
+                    pendingTranslations.remove(paragraphId)
+                    return
+                }
                 Log.d(TAG, "🌐 Starting translation for paragraph: $paragraphId (marked as pending)")
                 performTranslation(paragraphId, paragraphText)
             } catch (e: Exception) {
@@ -5281,6 +5344,7 @@ class EpubReaderActivity : AppCompatActivity() {
                                     } else {
                                         // Translation failed, remove loading state
                                         Log.w(TAG, "⚠️ Translation result empty or same as original")
+                                        refundTranslationCredit()
                                         resetElementState(paragraphId)
                                         Toast.makeText(this@EpubReaderActivity, "Translation failed - empty result", Toast.LENGTH_SHORT).show()
                                     }
@@ -5296,9 +5360,14 @@ class EpubReaderActivity : AppCompatActivity() {
                                 try {
                                     // Translation failed, remove loading state
                                     Log.e(TAG, "❌ Translation FAILED: ${error.message}", error)
+                                    refundTranslationCredit()
                                     resetElementState(paragraphId)
                                     Log.e(TAG, "Translation error: ${error.message}")
-                                    Toast.makeText(this@EpubReaderActivity, "Translation error: ${error.message}", Toast.LENGTH_SHORT).show()
+                                    if (error is ModelNotDownloadedException) {
+                                        showModelDownloadPrompt()
+                                    } else {
+                                        Toast.makeText(this@EpubReaderActivity, "Translation error: ${error.message}", Toast.LENGTH_SHORT).show()
+                                    }
                                 } finally {
                                     // Always remove from pending translations
                                     pendingTranslations.remove(paragraphId)
@@ -5311,6 +5380,7 @@ class EpubReaderActivity : AppCompatActivity() {
                     synchronized(translationLock) {
                         try {
                             Log.e(TAG, "Error during translation", e)
+                            refundTranslationCredit()
                             resetElementState(paragraphId)
                             Toast.makeText(this@EpubReaderActivity, "Translation error: ${e.message}", Toast.LENGTH_SHORT).show()
                         } finally {
@@ -5323,6 +5393,7 @@ class EpubReaderActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error performing default translation", e)
+            refundTranslationCredit()
             resetElementState(paragraphId)
             Toast.makeText(this, "Translation error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
@@ -5350,6 +5421,17 @@ class EpubReaderActivity : AppCompatActivity() {
         """.trimIndent()
 
         binding.webView.evaluateJavascript(resetJsCode, null)
+    }
+
+    private fun showModelDownloadPrompt() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.offline_model_not_downloaded_title)
+            .setMessage(R.string.offline_model_not_downloaded)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.open_settings) { _, _ ->
+                startActivity(Intent(this, SettingsActivity::class.java))
+            }
+            .show()
     }
 
     /**
@@ -5428,6 +5510,24 @@ class EpubReaderActivity : AppCompatActivity() {
 
         binding.webView.evaluateJavascript(loadingJsCode, null)
     }
+    
+    private fun openExternalTranslationApp(paragraphText: String, packageName: String) {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, paragraphText)
+            setPackage(packageName)
+        }
+        try {
+            startActivity(shareIntent)
+        } catch (missingAppError: Exception) {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")))
+            } catch (playStoreError: Exception) {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")))
+                Log.w(TAG, "External translation app unavailable: $packageName", missingAppError)
+            }
+        }
+    }
 
     /**
      * JavaScript interface for WebView communication
@@ -5436,9 +5536,8 @@ class EpubReaderActivity : AppCompatActivity() {
         @android.webkit.JavascriptInterface
         fun onLinkClick(href: String) {
             runOnUiThread {
-                val link = href.trim()
-                if (link.isNotEmpty()) {
-                    handleBookLink(link)
+                if (href.isNotEmpty()) {
+                    handleBookLink(href)
                 }
             }
         }
@@ -5473,6 +5572,23 @@ class EpubReaderActivity : AppCompatActivity() {
                     Log.e(TAG, "❌ Error handling paragraph double-click", e)
                     // Show user-visible error
                     Toast.makeText(this@EpubReaderActivity, "Double-tap translation error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun onParagraphTripleTapped(paragraphText: String, paragraphId: String) {
+            runOnUiThread {
+                try {
+                    Log.d(TAG, "Long-press translation dialog requested: $paragraphId")
+                    showParagraphPopupMenu(
+                        paragraphId,
+                        paragraphText,
+                        binding.webView.width / 2f,
+                        binding.webView.height / 2f
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error showing long-press translation dialog", e)
                 }
             }
         }

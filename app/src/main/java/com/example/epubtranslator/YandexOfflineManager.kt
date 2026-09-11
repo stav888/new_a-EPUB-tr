@@ -31,20 +31,22 @@ class MlKitOfflineManager(private val context: Context) {
                 code = language.code,
                 name = language.displayName,
                 mlKitCode = language.mlKitCode,
-                isDownloaded = isLanguageDownloaded(language.mlKitCode)
+                isDownloaded = sharedPreferences.getBoolean("downloaded_${language.mlKitCode}", false)
             )
         }
     }
 
     // Check if a language is downloaded
-    fun isLanguageDownloaded(languageCode: String): Boolean {
-        return sharedPreferences.getBoolean("downloaded_$languageCode", false)
+    suspend fun isLanguageDownloaded(language: Language): Boolean {
+        val isDownloaded = mlKitService.areModelsDownloaded(language.mlKitCode, "en")
+        sharedPreferences.edit().putBoolean("downloaded_${language.mlKitCode}", isDownloaded).apply()
+        return isDownloaded
     }
 
     // Refresh download status for all languages
     suspend fun refreshDownloadStatus(languages: List<OfflineLanguage>) {
         for (language in languages) {
-            val isDownloaded = mlKitService.areModelsDownloaded(language.mlKitCode, "en")
+                val isDownloaded = mlKitService.areModelsDownloaded(language.mlKitCode, "en")
             language.isDownloaded = isDownloaded
             sharedPreferences.edit().putBoolean("downloaded_${language.mlKitCode}", isDownloaded).apply()
         }
@@ -52,41 +54,32 @@ class MlKitOfflineManager(private val context: Context) {
 
     // Download a language
     fun downloadLanguage(
-        language: OfflineLanguage,
+        language: Language,
         progressCallback: (Int) -> Unit,
         completionCallback: (Boolean) -> Unit
     ) {
         coroutineScope.launch {
             try {
-                withContext(Dispatchers.Main) {
-                    language.isDownloading = true
-                }
-
                 val result = mlKitService.downloadModel(language.mlKitCode) { progress ->
-                    language.downloadProgress = progress
                     progressCallback(progress)
                 }
 
                 withContext(Dispatchers.Main) {
                     result.fold(
                         onSuccess = {
-                            language.isDownloaded = true
-                            language.isDownloading = false
                             sharedPreferences.edit().putBoolean("downloaded_${language.mlKitCode}", true).apply()
                             completionCallback(true)
-                            Log.d(TAG, "Downloaded language: ${language.name}")
+                            Log.d(TAG, "Downloaded language: ${language.displayName}")
                         },
                         onFailure = { error ->
-                            Log.e(TAG, "Error downloading language: ${language.name}", error)
-                            language.isDownloading = false
+                            Log.e(TAG, "Error downloading language: ${language.displayName}", error)
                             completionCallback(false)
                         }
                     )
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Log.e(TAG, "Exception downloading language: ${language.name}", e)
-                    language.isDownloading = false
+                    Log.e(TAG, "Exception downloading language: ${language.displayName}", e)
                     completionCallback(false)
                 }
             }

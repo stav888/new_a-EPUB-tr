@@ -99,8 +99,25 @@ class TranslationManager(private val context: Context) {
 
             val sourceLanguageCode = detectLanguage(translationInput)
             val sourceLanguage = Language.fromCode(sourceLanguageCode)
-            mlKitService.translateText(translationInput, sourceLanguage.mlKitCode, targetLanguage.mlKitCode)
-                .map { translatedText -> restoreBulletMarkers(translatedText) }
+            val result = mlKitService.translateText(
+                translationInput,
+                sourceLanguage.mlKitCode,
+                targetLanguage.mlKitCode
+            )
+            result.fold(
+                onSuccess = { translatedText ->
+                    Result.success(restoreBulletMarkers(translatedText))
+                },
+                onFailure = {
+                    Result.failure(
+                        ModelNotDownloadedException(
+                            "Download the ML Kit language model in Settings before translating.",
+                            sourceLanguage,
+                            targetLanguage
+                        )
+                    )
+                }
+            )
         } catch (e: ModelNotDownloadedException) {
             Log.e(TAG, "Model not downloaded: ${e.message}")
             Result.failure(e)

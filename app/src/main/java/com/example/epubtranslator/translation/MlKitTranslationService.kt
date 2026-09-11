@@ -2,7 +2,9 @@ package com.example.epubtranslator.translation
 
 import android.util.Log
 import com.google.mlkit.common.model.DownloadConditions
+import com.google.mlkit.common.model.RemoteModelManager
 import com.google.mlkit.nl.translate.Translation
+import com.google.mlkit.nl.translate.TranslateRemoteModel
 import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.TranslatorOptions
 import kotlinx.coroutines.Dispatchers
@@ -40,10 +42,11 @@ class MlKitTranslationService {
     suspend fun areModelsDownloaded(sourceLanguage: String, targetLanguage: String): Boolean {
         return withContext(Dispatchers.Default) {
             try {
-                val translator = getTranslator(sourceLanguage, targetLanguage)
-                val conditions = DownloadConditions.Builder().requireWifi().build()
-                translator.downloadModelIfNeeded(conditions).await()
-                true
+                val modelManager = RemoteModelManager.getInstance()
+                val sourceModel = TranslateRemoteModel.Builder(sourceLanguage).build()
+                val targetModel = TranslateRemoteModel.Builder(targetLanguage).build()
+                modelManager.isModelDownloaded(sourceModel).await() &&
+                    modelManager.isModelDownloaded(targetModel).await()
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking if models are downloaded: ${e.message}")
                 false
@@ -68,20 +71,44 @@ class MlKitTranslationService {
                         .build()
                 )
 
-                // Report 50% progress
-                onProgress(50)
+                onProgress(5)
 
                 // Download the model
-                val conditions = DownloadConditions.Builder().requireWifi().build()
+                // Allow model downloads over Wi-Fi or mobile data.
+                val conditions = DownloadConditions.Builder().build()
                 translator.downloadModelIfNeeded(conditions).await()
 
-                // Report 100% progress
-                onProgress(100)
+                onProgress(95)
 
                 Log.d(TAG, "Model downloaded for language: $languageCode")
                 Result.success(Unit)
             } catch (e: Exception) {
                 Log.e(TAG, "Error downloading model for language $languageCode: ${e.message}")
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun downloadModelPair(
+        sourceLanguage: String,
+        targetLanguage: String,
+        onProgress: (Int) -> Unit = {}
+    ): Result<Unit> {
+        return withContext(Dispatchers.Default) {
+            try {
+                if (areModelsDownloaded(sourceLanguage, targetLanguage)) {
+                    onProgress(100)
+                    return@withContext Result.success(Unit)
+                }
+
+                val translator = getTranslator(sourceLanguage, targetLanguage)
+                onProgress(5)
+                translator.downloadModelIfNeeded(DownloadConditions.Builder().build()).await()
+                onProgress(95)
+                onProgress(100)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error downloading model pair $sourceLanguage -> $targetLanguage", e)
                 Result.failure(e)
             }
         }
@@ -120,7 +147,15 @@ class MlKitTranslationService {
         return withContext(Dispatchers.Default) {
             try {
                 val translator = getTranslator(sourceLanguage, targetLanguage)
-                translator.downloadModelIfNeeded(DownloadConditions.Builder().requireWifi().build()).await()
+                if (!areModelsDownloaded(sourceLanguage, targetLanguage)) {
+                    val downloadResult = downloadModelPair(sourceLanguage, targetLanguage)
+                    if (downloadResult.isFailure) {
+                        return@withContext Result.failure<String>(
+                            downloadResult.exceptionOrNull()
+                                ?: IllegalStateException("Required ML Kit translation models are not downloaded.")
+                        )
+                    }
+                }
                 val translatedText = translator.translate(text).await()
                 Log.d(TAG, "Translation successful: ${translatedText.take(50)}...")
                 Result.success(translatedText)

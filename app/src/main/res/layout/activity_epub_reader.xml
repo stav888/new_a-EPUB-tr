@@ -82,14 +82,16 @@
                 <TextView
                     android:id="@+id/creditsTextView"
                     android:layout_width="wrap_content"
-                    android:layout_height="38dp"
+                    android:layout_height="34dp"
                     android:gravity="center"
-                    android:text="100"
+                    android:text="@string/translation_credits_unlimited"
                     android:textColor="@color/stitch_primary"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:layout_marginStart="8dp"
-                    android:contentDescription="Translation credits" />
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@string/translation_credits" />
 
             </LinearLayout>
 
