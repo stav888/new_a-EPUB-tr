@@ -7,44 +7,48 @@
     android:padding="8dp"
     android:elevation="8dp">
 
-    <!-- Copy Text Option -->
-    <TextView
-        android:id="@+id/copyTextButton"
-        android:layout_width="200dp"
-        android:layout_height="48dp"
-        android:text="📋 Copy Text"
-        android:textSize="16sp"
-        android:textColor="@color/black"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:drawablePadding="12dp" />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:minWidth="240dp">
 
-    <!-- Divider -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/purple_200"
-        android:layout_marginVertical="4dp" />
+        <TextView
+            android:id="@+id/copyTextButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Copy Text"
+            android:textSize="15sp"
+            android:textColor="@color/black"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true" />
 
-    <!-- Translate here option -->
-    <TextView
-        android:id="@+id/translateHereButton"
-        android:layout_width="200dp"
-        android:layout_height="48dp"
-        android:text="Translate here"
-        android:textSize="16sp"
-        android:textColor="@color/black"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:drawablePadding="12dp" />
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/purple_200"
+            android:layout_marginVertical="8dp" />
+
+        <TextView
+            android:id="@+id/translateHereButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Translate"
+            android:textSize="15sp"
+            android:textColor="@color/black"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"
