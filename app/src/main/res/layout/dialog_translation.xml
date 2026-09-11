@@ -48,9 +48,26 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Choose a translation app"
+                    android:id="@+id/translationTextView"
+                    android:text="Translating..."
+                    android:textSize="16sp"
+                    android:textIsSelectable="true"
+                    tools:text="Translated text goes here." />
+
+                <ProgressBar
+                    android:id="@+id/loadingProgressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center" />
+
+                <TextView
+                    android:id="@+id/translationTitleTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Translated with Google"
                     android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textStyle="italic" />
 
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
@@ -62,7 +79,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="Choose one of the translation apps"
+            android:text="Translated with Google"
             android:textSize="12sp"
             android:textStyle="italic" />
 
@@ -74,18 +91,11 @@
             android:gravity="end">
 
             <Button
-                android:id="@+id/openGoogleTranslateButton"
+                android:id="@+id/showInBookButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:text="Google Translate" />
-
-            <Button
-                android:id="@+id/openYandexTranslateButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="Yandex Translate" />
+                android:text="Show in book" />
 
             <Button
                 android:id="@+id/openSettingsButton"

@@ -31,6 +31,7 @@ import com.example.epubtranslator.data.BookPositionManager
 import com.example.epubtranslator.databinding.ActivityEpubReaderBinding
 import com.example.epubtranslator.translation.TranslationApi
 import com.example.epubtranslator.translation.TranslationManager
+import com.example.epubtranslator.translation.TranslationDialog
 import com.example.epubtranslator.translation.TranslationMethod
 import com.example.epubtranslator.translation.ModelNotDownloadedException
 import android.widget.PopupMenu
@@ -4156,6 +4157,10 @@ class EpubReaderActivity : AppCompatActivity() {
         paragraphId: String,
         paragraphText: String
     ) {
+        popupView.findViewById<View>(R.id.translateHereButton)?.setOnClickListener {
+            popupWindow.dismiss()
+            handleDoubleClickTranslation(paragraphId, paragraphText)
+        }
         popupView.findViewById<View>(R.id.googleTranslateButton).setOnClickListener {
             openExternalTranslationApp(paragraphText, "com.google.android.apps.translate")
             popupWindow.dismiss()
@@ -4214,6 +4219,28 @@ class EpubReaderActivity : AppCompatActivity() {
         preferences.edit().putInt("translation_credits", credits - 1).apply()
         updateCreditsDisplay(credits - 1)
         return true
+    }
+
+    private fun showTranslationDialog(paragraphId: String, paragraphText: String) {
+        if (!consumeTranslationCredit()) return
+
+        TranslationDialog(
+            this,
+            paragraphText,
+            translationManager,
+            onShowInBook = { translatedText ->
+                showTranslatedTextInBook(paragraphId, paragraphText, translatedText)
+            },
+            onTranslationFailed = { refundTranslationCredit() }
+        ).show()
+    }
+
+    private fun showTranslatedTextInBook(paragraphId: String, originalText: String, translatedText: String) {
+        val targetLanguage = translationManager.getTargetLanguage().code
+        pageTranslations.getOrPut(currentPage) { mutableMapOf() }[paragraphId] = translatedText
+        pageTranslationTargetLanguages.getOrPut(currentPage) { mutableMapOf() }[paragraphId] = targetLanguage
+        pageTranslationMethods.getOrPut(currentPage) { mutableMapOf() }[paragraphId] = TranslationMethod.DEFAULT
+        toggleTranslationVisibility(paragraphId, true)
     }
 
     private fun refundTranslationCredit() {
@@ -5581,12 +5608,7 @@ class EpubReaderActivity : AppCompatActivity() {
             runOnUiThread {
                 try {
                     Log.d(TAG, "Long-press translation dialog requested: $paragraphId")
-                    showParagraphPopupMenu(
-                        paragraphId,
-                        paragraphText,
-                        binding.webView.width / 2f,
-                        binding.webView.height / 2f
-                    )
+                    showTranslationDialog(paragraphId, paragraphText)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error showing long-press translation dialog", e)
                 }
