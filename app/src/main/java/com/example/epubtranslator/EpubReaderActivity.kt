@@ -946,10 +946,10 @@ class EpubReaderActivity : AppCompatActivity() {
     private fun confirmClearBookData() {
         try {
             val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Clear Book Data")
-                .setMessage("This will remove all translations for this book. The action cannot be undone, and the credits already used will not be returned.")
+                .setTitle(R.string.clear_book_data_title)
+                .setMessage(R.string.clear_book_data_message)
                 .setNegativeButton(android.R.string.cancel) { dialog, _ -> dialog.dismiss() }
-                .setPositiveButton("Clear") { dialog, _ ->
+                .setPositiveButton(R.string.clear) { dialog, _ ->
                     dialog.dismiss()
                     clearCurrentBookData()
                 }
@@ -1002,6 +1002,7 @@ class EpubReaderActivity : AppCompatActivity() {
             // Clear persisted translations for this book
             if (!path.isNullOrEmpty()) {
                 try {
+                    bookPositionManager.clearPosition(path)
                     bookPositionManager.clearBookTranslations(path)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error clearing persisted translations", e)
