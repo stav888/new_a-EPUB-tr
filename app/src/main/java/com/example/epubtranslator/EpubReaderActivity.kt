@@ -35,7 +35,6 @@ import com.example.epubtranslator.translation.TranslationManager
 import com.example.epubtranslator.translation.TranslationDialog
 import com.example.epubtranslator.translation.TranslationMethod
 import com.example.epubtranslator.translation.ModelNotDownloadedException
-import android.widget.PopupMenu
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -165,8 +164,6 @@ class EpubReaderActivity : AppCompatActivity() {
         setupToolbar()
 
         // Set up translation method dropdown
-        setupTranslationMethodDropdown()
-
         binding.creditsTextView.setOnClickListener {
             androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle(R.string.translation_credits)
@@ -184,6 +181,7 @@ class EpubReaderActivity : AppCompatActivity() {
             val displayTitle = if (!metaTitle.isNullOrBlank()) metaTitle else File(path).nameWithoutExtension
             binding.bookTitleText.text = displayTitle
         }
+        updateCurrentChapterDisplay()
 
 
         // Navigation buttons have been removed
@@ -1173,6 +1171,7 @@ class EpubReaderActivity : AppCompatActivity() {
             // Update page number display
             val pageText = "${currentPage + 1} / $totalPages"
             binding.pageNumberTextView.text = pageText
+            updateCurrentChapterDisplay()
             Log.d(TAG, "Updated page number display to: $pageText")
 
             // Update scroll-based progress for current page
@@ -1508,6 +1507,21 @@ class EpubReaderActivity : AppCompatActivity() {
 
         val dialog = builder.create()
         dialog.show()
+
+        val currentTocPosition = tocTargets.indexOfFirst { it.first == currentPage }
+        if (currentTocPosition >= 0) {
+            dialog.listView?.post {
+                dialog.listView?.setSelection(currentTocPosition)
+            }
+        }
+    }
+
+    private fun updateCurrentChapterDisplay() {
+        if (!::binding.isInitialized || htmlFiles.isEmpty()) return
+        val fileName = htmlFileNames.getOrNull(currentPage) ?: "unknown"
+        val chapterTitle = extractChapterTitle(htmlFiles[currentPage], currentPage, fileName)
+            .replace(Regex("^\\[\\d+\\]\\s*"), "")
+        binding.currentChapterText.text = chapterTitle
     }
 
     /**
@@ -1867,7 +1881,8 @@ class EpubReaderActivity : AppCompatActivity() {
         try {
             // Prefer official TOC title if available
             if (fileName != "unknown") {
-                tocTitleMap[fileName]?.let { tocTitle ->
+                val normalizedFileName = normalizeEpubPath(fileName)
+                (tocTitleMap[fileName] ?: tocTitleMap[normalizedFileName])?.let { tocTitle ->
                     val title = tocTitle.trim()
                     if (title.isNotEmpty()) {
                         Log.d(TAG, "📖 Chapter Title: Using TOC title for page ${'$'}{pageIndex + 1}: '${'$'}title' (from ${'$'}fileName)")
@@ -5468,60 +5483,6 @@ class EpubReaderActivity : AppCompatActivity() {
                 startActivity(Intent(this, SettingsActivity::class.java))
             }
             .show()
-    }
-
-    /**
-     * Set up the translation method dropdown in the toolbar
-     */
-    private fun setupTranslationMethodDropdown() {
-        val container = binding.translationMethodContainer
-        val textView = binding.translationMethodText
-
-        // Set initial method
-        val currentMethod = translationManager.getCurrentMethod()
-        textView.text = currentMethod.displayChar
-
-        // Set up click listener for dropdown
-        container.setOnClickListener {
-            showTranslationMethodMenu()
-        }
-    }
-
-    /**
-     * Show the translation method selection menu
-     */
-    private fun showTranslationMethodMenu() {
-        val popup = PopupMenu(this, binding.translationMethodContainer)
-        popup.menuInflater.inflate(R.menu.translation_method_menu, popup.menu)
-
-        // Set current selection
-        val currentMethod = translationManager.getCurrentMethod()
-        popup.menu.findItem(R.id.translation_method_default)?.isChecked = true
-
-        popup.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.translation_method_default -> {
-                    setTranslationMethod(TranslationMethod.DEFAULT)
-                    true
-                }
-                else -> false
-            }
-        }
-
-        popup.show()
-    }
-
-    /**
-     * Set the translation method and update UI
-     */
-    private fun setTranslationMethod(method: TranslationMethod) {
-        translationManager.setTranslationMethod(method)
-        binding.translationMethodText.text = method.displayChar
-
-        val methodName = getString(method.displayNameResId)
-        Toast.makeText(this, getString(R.string.translation_method_selected, methodName), Toast.LENGTH_SHORT).show()
-
-        Log.d(TAG, "Translation method changed to: $method")
     }
 
     /**

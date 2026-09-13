@@ -30,7 +30,7 @@
             android:paddingHorizontal="8dp"
             android:paddingVertical="8dp">
 
-            <!-- Left side: TOC Button and Translation Method -->
+            <!-- Left side: TOC Button and credits -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -47,37 +47,6 @@
                     android:scaleType="centerInside"
                     android:padding="7dp"
                     app:tint="@color/stitch_text_secondary" />
-
-                <!-- Translation Method Dropdown -->
-                <LinearLayout
-                    android:id="@+id/translationMethodContainer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/stitch_round_button"
-                    android:paddingHorizontal="7dp"
-                    android:layout_marginStart="4dp"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <TextView
-                        android:id="@+id/translationMethodText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="D"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/stitch_primary"
-                        android:layout_marginEnd="4dp" />
-
-                    <ImageView
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
-                        android:src="@drawable/ic_keyboard_arrow_down"
-                        app:tint="@color/stitch_text_secondary" />
-
-                </LinearLayout>
 
                 <TextView
                     android:id="@+id/creditsTextView"
@@ -193,6 +162,17 @@
             android:gravity="center"
             android:layout_marginTop="2dp"
             android:layout_marginBottom="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/currentChapterText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="@color/stitch_text_secondary"
+            android:gravity="center"
+            android:layout_marginBottom="4dp"
             android:maxLines="1"
             android:ellipsize="end" />
 
