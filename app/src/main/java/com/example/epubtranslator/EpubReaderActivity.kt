@@ -947,7 +947,7 @@ class EpubReaderActivity : AppCompatActivity() {
         try {
             val builder = androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Clear Book Data")
-                .setMessage("Clear all translations for this book? This cannot be undone.")
+                .setMessage("This will remove all translations for this book. The action cannot be undone, and the credits already used will not be returned.")
                 .setNegativeButton(android.R.string.cancel) { dialog, _ -> dialog.dismiss() }
                 .setPositiveButton("Clear") { dialog, _ ->
                     dialog.dismiss()
@@ -1511,7 +1511,10 @@ class EpubReaderActivity : AppCompatActivity() {
         val currentTocPosition = tocTargets.indexOfFirst { it.first == currentPage }
         if (currentTocPosition >= 0) {
             dialog.listView?.post {
-                dialog.listView?.setSelection(currentTocPosition)
+                val list = dialog.listView ?: return@post
+                val rowHeight = list.getChildAt(0)?.height ?: 0
+                val centerOffset = ((list.height - rowHeight) / 2).coerceAtLeast(0)
+                list.setSelectionFromTop(currentTocPosition, centerOffset)
             }
         }
     }
