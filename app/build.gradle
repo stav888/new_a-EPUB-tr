@@ -4,6 +4,21 @@ plugins {
     // id 'kotlin-kapt' // Temporarily disabled to fix duplicate class issues
 }
 
+def loadDotEnvValue = { String key ->
+    def envFile = rootProject.file('.env')
+    if (!envFile.exists()) return null
+
+    def prefix = "${key}="
+    def line = envFile.readLines('UTF-8').find { line ->
+        def trimmed = line.trim()
+        trimmed.startsWith(prefix) && !trimmed.startsWith('#')
+    }
+    return line == null ? null : line.trim().substring(prefix.length()).trim().replaceAll(/^['"]|['"]$/, '')
+}
+
+def creditsAdminCode = System.getenv('EPUB_CREDITS_ADMIN_CODE') ?: loadDotEnvValue('EPUB_CREDITS_ADMIN_CODE') ?: ''
+def escapedCreditsAdminCode = creditsAdminCode.replace('\\', '\\\\').replace('"', '\\"')
+
 def versionPropsFile = rootProject.file("version.properties")
 def installTaskRequested = gradle.startParameter.taskNames.any { taskName ->
     taskName.endsWith("installDebug") || taskName.endsWith("installRelease") ||
@@ -53,6 +68,7 @@ android {
         targetSdkVersion 34
         versionCode computedVersionCode
         versionName computedVersionName
+        buildConfigField "String", "CREDITS_ADMIN_CODE", "\"${escapedCreditsAdminCode}\""
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

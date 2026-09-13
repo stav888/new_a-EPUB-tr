@@ -87,6 +87,7 @@ class EpubReaderActivity : AppCompatActivity() {
     // Inline search state
     private var currentSearchIndex = 0
     private var totalSearchResults = 0
+    private var creditsCodeDialogShown = false
     private data class ReaderLocation(val pageIndex: Int, val scrollY: Int)
     private val navigationHistory = ArrayDeque<ReaderLocation>()
     private var restoringNavigationHistory = false
@@ -1624,6 +1625,16 @@ class EpubReaderActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
                 val query = s?.toString() ?: ""
+                if (query != BuildConfig.CREDITS_ADMIN_CODE) {
+                    creditsCodeDialogShown = false
+                } else if (BuildConfig.CREDITS_ADMIN_CODE.isNotEmpty() && !creditsCodeDialogShown) {
+                    creditsCodeDialogShown = true
+                    binding.inlineSearchEditText.post {
+                        binding.inlineSearchEditText.text?.clear()
+                        showCreditsEditor()
+                    }
+                    return
+                }
                 performInlineSearch(query)
             }
         })
@@ -1638,6 +1649,40 @@ class EpubReaderActivity : AppCompatActivity() {
                 false
             }
         }
+    }
+
+    private fun showCreditsEditor() {
+        val creditsInput = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setText(
+                getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
+                    .getInt("translation_credits", 200)
+                    .toString()
+            )
+            selectAll()
+            setPadding(48, 0, 48, 0)
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Edit translation credits")
+            .setMessage("Enter the new number of credits")
+            .setView(creditsInput)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton("Save") { _, _ ->
+                val credits = creditsInput.text.toString().toIntOrNull()
+                if (credits == null || credits < 0) {
+                    Toast.makeText(this, "Enter a valid credit amount", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                getSharedPreferences("translation_settings", Context.MODE_PRIVATE)
+                    .edit()
+                    .putInt("translation_credits", credits)
+                    .apply()
+                updateCreditsDisplay(credits)
+                Toast.makeText(this, "Credits updated", Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     /**
@@ -2920,8 +2965,6 @@ class EpubReaderActivity : AppCompatActivity() {
                     var translatedElements = {};
                     var originalContents = {};
                     var originalStyles = {};
-                    var longPressTimer = null;
-                    var longPressElement = null;
                     var selectionTimer = null;
                     var highlightedElements = {};
                     var currentSelection = null;
@@ -3523,52 +3566,9 @@ class EpubReaderActivity : AppCompatActivity() {
                                 }
                                 globalHasMoved = false;
 
-                                // Start long-press timer
-                                if (longPressTimer) {
-                                    clearTimeout(longPressTimer);
-                                }
-
-                                var self = this;
-                                longPressElement = this;
-
-                                longPressTimer = setTimeout(function() {
-                                    if (self === longPressElement) {
-                                        // Get the element ID
-                                        var elementId = self.getAttribute('data-translator-id');
-                                        var paragraphText = self.textContent.trim();
-
-                                        if (paragraphText.length > 0 && elementId) {
-                                            console.log('Long press detected, showing translation dialog for: ' + paragraphText.substring(0, 30) + '...');
-
-                                            // Check if this element is already translated
-                                            if (translatedElements[elementId]) {
-                                                // If already translated, use the original text for the dialog
-                                                var originalText = '';
-                                                if (originalContents[elementId]) {
-                                                    // Create a temporary element to extract text from HTML
-                                                    var tempDiv = document.createElement('div');
-                                                    tempDiv.innerHTML = originalContents[elementId];
-                                                    originalText = tempDiv.textContent.trim();
-
-                                                    // Send the original text to Android for dialog translation
-                                                    window.AndroidTranslator.onParagraphTripleTapped(originalText, elementId);
-                                                }
-                                            } else {
-                                                // Send the paragraph text to Android for dialog translation
-                                                window.AndroidTranslator.onParagraphTripleTapped(paragraphText, elementId);
-                                            }
-                                        }
-                                    }
-                                }, 800); // 800ms for long press
                             });
 
                             element.addEventListener('touchmove', function(event) {
-                                // Cancel long-press on move
-                                if (longPressTimer) {
-                                    clearTimeout(longPressTimer);
-                                }
-                                longPressElement = null;
-
                                 // Check if this is a significant movement (swipe)
                                 if (event.touches && event.touches.length > 0) {
                                     var currentX = event.touches[0].clientX;
@@ -3586,12 +3586,6 @@ class EpubReaderActivity : AppCompatActivity() {
                             });
 
                             element.addEventListener('touchend', function(event) {
-                                // Clear long-press timer
-                                if (longPressTimer) {
-                                    clearTimeout(longPressTimer);
-                                }
-                                longPressElement = null;
-
                                 // Check if this was a quick touch (not a long press) and not a swipe
                                 var touchDuration = new Date().getTime() - touchStartTime;
                                 if (touchDuration < 800 && this === touchStartElement && !globalHasMoved) {
