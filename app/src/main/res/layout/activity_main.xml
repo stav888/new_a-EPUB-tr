@@ -225,6 +225,8 @@
             android:contentDescription="@string/menu"
             android:text="Menu"
             android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:icon="@android:drawable/ic_menu_more"
             app:iconTint="?attr/colorOnPrimaryContainer"
             app:backgroundTint="?attr/colorPrimaryContainer"

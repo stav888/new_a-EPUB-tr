@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         try {
             // Get version information from package manager
             val packageInfo = packageManager.getPackageInfo(packageName, 0)
-            val versionName = packageInfo.versionName ?: "1.5.28 build 4"
+            val versionName = packageInfo.versionName ?: BuildConfig.VERSION_NAME
 
             // versionName already contains "build X" format from build.gradle
             // Don't add duplicate "build" text
@@ -148,12 +148,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             // If we can't get version info, use default
             val menu = binding.navigationView.menu
             val versionItem = menu.findItem(R.id.nav_version)
-            versionItem?.title = "Version 1.5.12 build (44)"
+            versionItem?.title = "Version ${BuildConfig.VERSION_NAME}"
 
             // Update header with fallback
             val headerView = binding.navigationView.getHeaderView(0)
             val headerVersionText = headerView.findViewById<TextView>(R.id.navHeaderVersionText)
-            headerVersionText?.text = "v1.5.12 build (44)"
+            headerVersionText?.text = "v${BuildConfig.VERSION_NAME}"
         }
     }
 
@@ -605,15 +605,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_settings -> {
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
-            }
-            R.id.nav_about -> {
-                startActivity(Intent(this, LegalInfoActivity::class.java).putExtra(LegalInfoActivity.EXTRA_PAGE, LegalInfoActivity.PAGE_ABOUT))
-            }
-            R.id.nav_terms -> {
-                startActivity(Intent(this, LegalInfoActivity::class.java).putExtra(LegalInfoActivity.EXTRA_PAGE, LegalInfoActivity.PAGE_TERMS))
-            }
-            R.id.nav_privacy -> {
-                startActivity(Intent(this, LegalInfoActivity::class.java).putExtra(LegalInfoActivity.EXTRA_PAGE, LegalInfoActivity.PAGE_PRIVACY))
             }
         }
 

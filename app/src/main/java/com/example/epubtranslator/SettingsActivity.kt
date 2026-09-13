@@ -41,6 +41,17 @@ class SettingsActivity : AppCompatActivity() {
         binding.saveButton.setOnClickListener {
             saveSettings()
         }
+
+        binding.termsRow.setOnClickListener { openLegalPage(LegalInfoActivity.PAGE_TERMS) }
+        binding.privacyRow.setOnClickListener { openLegalPage(LegalInfoActivity.PAGE_PRIVACY) }
+        binding.aboutRow.setOnClickListener { openLegalPage(LegalInfoActivity.PAGE_ABOUT) }
+    }
+
+    private fun openLegalPage(page: String) {
+        startActivity(
+            android.content.Intent(this, LegalInfoActivity::class.java)
+                .putExtra(LegalInfoActivity.EXTRA_PAGE, page)
+        )
     }
 
     private fun setupLanguageSpinner() {
