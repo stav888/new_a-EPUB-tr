@@ -1674,7 +1674,8 @@ class EpubReaderActivity : AppCompatActivity() {
                     .toString()
             )
             selectAll()
-            setPadding(48, 0, 48, 0)
+            minHeight = resources.getDimensionPixelSize(com.google.android.material.R.dimen.mtrl_min_touch_target_size)
+            setPadding(48, 12, 48, 12)
         }
 
         androidx.appcompat.app.AlertDialog.Builder(this)
