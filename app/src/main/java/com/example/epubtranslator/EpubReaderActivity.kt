@@ -27,6 +27,7 @@ import android.graphics.Color
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import java.io.File
+import java.security.MessageDigest
 import com.example.epubtranslator.data.BookPositionManager
 import com.example.epubtranslator.databinding.ActivityEpubReaderBinding
 import com.example.epubtranslator.translation.TranslationApi
@@ -1625,9 +1626,9 @@ class EpubReaderActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
                 val query = s?.toString() ?: ""
-                if (query != BuildConfig.CREDITS_ADMIN_CODE) {
+                if (!creditsCodeMatches(query)) {
                     creditsCodeDialogShown = false
-                } else if (BuildConfig.CREDITS_ADMIN_CODE.isNotEmpty() && !creditsCodeDialogShown) {
+                } else if (!creditsCodeDialogShown) {
                     creditsCodeDialogShown = true
                     binding.inlineSearchEditText.post {
                         binding.inlineSearchEditText.text?.clear()
@@ -1649,6 +1650,19 @@ class EpubReaderActivity : AppCompatActivity() {
                 false
             }
         }
+    }
+
+    private fun creditsCodeMatches(input: String): Boolean {
+        val configuredHash = BuildConfig.CREDITS_ADMIN_CODE_HASH
+        if (configuredHash.isEmpty()) return false
+
+        val inputHash = MessageDigest.getInstance("SHA-256")
+            .digest(input.toByteArray(Charsets.UTF_8))
+            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+        return MessageDigest.isEqual(
+            inputHash.toByteArray(Charsets.UTF_8),
+            configuredHash.toByteArray(Charsets.UTF_8)
+        )
     }
 
     private fun showCreditsEditor() {
