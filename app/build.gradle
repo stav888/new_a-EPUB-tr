@@ -25,7 +25,8 @@ def creditsAdminCodeHash = creditsAdminCode ? java.security.MessageDigest.getIns
 def versionPropsFile = rootProject.file("version.properties")
 def installTaskRequested = gradle.startParameter.taskNames.any { taskName ->
     taskName.endsWith("installDebug") || taskName.endsWith("installRelease") ||
-            taskName.endsWith("installDebugViaAdb")
+            taskName.endsWith("installDebugViaAdb") || taskName.endsWith("assembleDebug") ||
+            taskName.endsWith("assembleRelease")
 }
 def shouldBumpVersion = !project.hasProperty('disableAutoVersionBump') &&
         (project.findProperty('bumpVersion') == 'true' || installTaskRequested)

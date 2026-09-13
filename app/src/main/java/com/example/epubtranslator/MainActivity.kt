@@ -125,36 +125,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
      * Set up version information display
      */
     private fun setupVersionInfo() {
-        try {
-            // Get version information from package manager
-            val packageInfo = packageManager.getPackageInfo(packageName, 0)
-            val versionName = packageInfo.versionName ?: BuildConfig.VERSION_NAME
+        val displayVersion = BuildConfig.VERSION_NAME
 
-            // versionName already contains "build X" format from build.gradle
-            // Don't add duplicate "build" text
-            val displayVersion = versionName
+        val menu = binding.navigationView.menu
+        val versionItem = menu.findItem(R.id.nav_version)
+        versionItem?.title = "Version $displayVersion"
 
-            // Update the navigation menu item with current version
-            val menu = binding.navigationView.menu
-            val versionItem = menu.findItem(R.id.nav_version)
-            versionItem?.title = "Version $displayVersion"
-
-            // Update the header version text
-            val headerView = binding.navigationView.getHeaderView(0)
-            val headerVersionText = headerView.findViewById<TextView>(R.id.navHeaderVersionText)
-            headerVersionText?.text = "v$displayVersion"
-
-        } catch (e: Exception) {
-            // If we can't get version info, use default
-            val menu = binding.navigationView.menu
-            val versionItem = menu.findItem(R.id.nav_version)
-            versionItem?.title = "Version ${BuildConfig.VERSION_NAME}"
-
-            // Update header with fallback
-            val headerView = binding.navigationView.getHeaderView(0)
-            val headerVersionText = headerView.findViewById<TextView>(R.id.navHeaderVersionText)
-            headerVersionText?.text = "v${BuildConfig.VERSION_NAME}"
-        }
+        val headerView = binding.navigationView.getHeaderView(0)
+        val headerVersionText = headerView.findViewById<TextView>(R.id.navHeaderVersionText)
+        headerVersionText?.text = "v$displayVersion"
     }
 
     private fun setupNavigationDrawer() {
